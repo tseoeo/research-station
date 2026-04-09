@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Practical Narrative for AI</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+/* ─── Reset & Base ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --font-serif: Charter, 'Bitstream Charter', 'Sitka Text', Cambria, serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+  --max-w: 700px;
+  --nav-h: 48px;
+
+  /* Light theme */
+  --bg: #faf9f7;
+  --bg-alt: #f0efec;
+  --bg-card: #fff;
+  --text: #1a1a1a;
+  --text-secondary: #555;
+  --text-muted: #888;
+  --accent: #8b5cf6;
+  --accent-soft: #ede9fe;
+  --border: #e5e3df;
+  --border-light: #eee;
+  --shadow: rgba(0,0,0,0.06);
+  --tooltip-bg: #1a1a1a;
+  --tooltip-text: #f5f5f5;
+  --claim-bg: #f5f0ff;
+  --claim-border: #c4b5fd;
+  --viz-bg: #fff;
+  --viz-grid: #e5e3df;
+  --viz-text: #555;
+  --multiply-color: #059669;
+  --divide-color: #dc2626;
+  --multiply-bg: #ecfdf5;
+  --divide-bg: #fef2f2;
+  --phase-active: #8b5cf6;
+  --phase-inactive: #d4d4d8;
+  --enchant-color: #7c3aed;
+  --determ-color: #0891b2;
+  --nav-bg: rgba(250,249,247,0.92);
+  --nav-border: rgba(0,0,0,0.06);
+  --loop-bg: #faf9f7;
+}
+
+.dark {
+  --bg: #111113;
+  --bg-alt: #1a1a1e;
+  --bg-card: #1e1e22;
+  --text: #e4e4e7;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --accent: #a78bfa;
+  --accent-soft: #1e1b2e;
+  --border: #2a2a2e;
+  --border-light: #27272a;
+  --shadow: rgba(0,0,0,0.3);
+  --tooltip-bg: #e4e4e7;
+  --tooltip-text: #111113;
+  --claim-bg: #1e1b2e;
+  --claim-border: #6d28d9;
+  --viz-bg: #1e1e22;
+  --viz-grid: #2a2a2e;
+  --viz-text: #a1a1aa;
+  --multiply-color: #34d399;
+  --divide-color: #f87171;
+  --multiply-bg: #052e16;
+  --divide-bg: #2a0a0a;
+  --phase-active: #a78bfa;
+  --phase-inactive: #3f3f46;
+  --enchant-color: #a78bfa;
+  --determ-color: #22d3ee;
+  --nav-bg: rgba(17,17,19,0.92);
+  --nav-border: rgba(255,255,255,0.06);
+  --loop-bg: #111113;
+}
+
+/* ─── Typography ─── */
+html { font-size: 17px; scroll-behavior: smooth; scroll-padding-top: calc(var(--nav-h) + 24px); }
+
+body {
+  font-family: var(--font-serif);
+  line-height: 1.68;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.3s, color 0.3s;
+}
+
+h1, h2, h3, h4 { font-family: var(--font-sans); font-weight: 600; line-height: 1.25; letter-spacing: -0.01em; }
+h1 { font-size: 2.2rem; margin-bottom: 0.3em; }
+h2 { font-size: 1.6rem; margin: 2.5em 0 0.6em; }
+h3 { font-size: 1.2rem; margin: 2em 0 0.5em; color: var(--text); }
+h4 { font-size: 1rem; margin: 1.5em 0 0.4em; }
+
+p { margin-bottom: 1em; }
+strong { font-weight: 600; }
+
+/* ─── Layout ─── */
+.container { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
+
+main { padding-top: calc(var(--nav-h) + 40px); padding-bottom: 120px; }
+
+.part { margin-bottom: 4em; }
+.part + .part { border-top: 1px solid var(--border); padding-top: 3em; }
+
+/* ─── Navigation ─── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: var(--nav-h);
+  background: var(--nav-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--nav-border);
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.3s;
+}
+
+.nav-inner {
+  max-width: 900px; width: 100%; padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.nav-links { display: flex; gap: 4px; }
+
+.nav-link {
+  font-family: var(--font-sans); font-size: 0.75rem; font-weight: 500;
+  color: var(--text-muted); text-decoration: none;
+  padding: 6px 10px; border-radius: 6px;
+  transition: color 0.2s, background 0.2s;
+}
+.nav-link:hover { color: var(--text); background: var(--bg-alt); }
+.nav-link.active { color: var(--accent); background: var(--accent-soft); }
+
+.nav-right { display: flex; align-items: center; gap: 8px; }
+
+.toc-toggle {
+  font-family: var(--font-sans); font-size: 0.75rem; font-weight: 500;
+  color: var(--text-muted); background: none; border: 1px solid var(--border);
+  padding: 5px 10px; border-radius: 6px; cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+.toc-toggle:hover { color: var(--text); border-color: var(--text-muted); }
+
+.theme-toggle {
+  width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--border);
+  background: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted); transition: color 0.2s, border-color 0.2s;
+}
+.theme-toggle:hover { color: var(--text); border-color: var(--text-muted); }
+
+/* ─── Table of Contents Overlay ─── */
+.toc-overlay {
+  position: fixed; top: var(--nav-h); left: 0; right: 0; bottom: 0; z-index: 90;
+  background: rgba(0,0,0,0.3); opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.toc-overlay.open { opacity: 1; pointer-events: auto; }
+
+.toc-panel {
+  position: fixed; top: var(--nav-h); right: 0; z-index: 91;
+  width: 320px; max-width: 90vw; height: calc(100vh - var(--nav-h));
+  background: var(--bg-card); border-left: 1px solid var(--border);
+  padding: 24px; overflow-y: auto;
+  transform: translateX(100%); transition: transform 0.3s ease;
+}
+.toc-overlay.open .toc-panel { transform: translateX(0); }
+
+.toc-panel h3 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin: 0 0 12px; }
+
+.toc-part { margin-bottom: 20px; }
+.toc-part-title {
+  font-family: var(--font-sans); font-size: 0.85rem; font-weight: 600;
+  color: var(--accent); margin-bottom: 6px;
+}
+.toc-item {
+  display: block; font-family: var(--font-sans); font-size: 0.8rem;
+  color: var(--text-secondary); text-decoration: none;
+  padding: 4px 0 4px 12px; border-left: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+.toc-item:hover { color: var(--text); border-left-color: var(--accent); }
+
+/* ─── Hero ─── */
+.hero {
+  text-align: center; padding: 60px 0 40px;
+}
+.hero h1 { font-size: 2.4rem; letter-spacing: -0.02em; }
+.hero .subtitle {
+  font-family: var(--font-serif); font-style: italic;
+  color: var(--text-secondary); font-size: 1.05rem; margin-top: 8px;
+}
+
+/* ─── Claim Callout ─── */
+.claim {
+  background: var(--claim-bg);
+  border-left: 3px solid var(--claim-border);
+  padding: 20px 24px;
+  margin: 1.5em 0 2em;
+  border-radius: 0 8px 8px 0;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+.claim-label {
+  font-family: var(--font-sans); font-size: 0.7rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--accent); margin-bottom: 8px;
+}
+
+/* ─── Reference Tooltips ─── */
+.ref {
+  font-weight: 600;
+  color: var(--text);
+  border-bottom: 1px dotted var(--text-muted);
+  cursor: help;
+  position: relative;
+  white-space: nowrap;
+}
+
+.ref-popover {
+  position: absolute; bottom: calc(100% + 8px); left: 50%;
+  transform: translateX(-50%);
+  width: 340px; max-width: 90vw;
+  background: var(--tooltip-bg); color: var(--tooltip-text);
+  font-family: var(--font-sans); font-size: 0.78rem; font-weight: 400;
+  line-height: 1.55; padding: 14px 16px;
+  border-radius: 8px; box-shadow: 0 8px 24px var(--shadow);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 200;
+  white-space: normal;
+}
+.ref-popover::after {
+  content: ''; position: absolute; top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent; border-top-color: var(--tooltip-bg);
+}
+
+/* Desktop hover */
+@media (hover: hover) {
+  .ref:hover .ref-popover { opacity: 1; pointer-events: auto; }
+}
+
+/* Mobile tap-to-expand */
+.ref-popover.show { opacity: 1; pointer-events: auto; }
+
+/* Fix positioning for popovers near edges */
+.ref-popover.flip-left { left: 0; transform: none; }
+.ref-popover.flip-left::after { left: 24px; }
+.ref-popover.flip-right { left: auto; right: 0; transform: none; }
+.ref-popover.flip-right::after { left: auto; right: 24px; }
+.ref-popover.flip-down { bottom: auto; top: calc(100% + 8px); }
+.ref-popover.flip-down::after { top: auto; bottom: 100%; border-top-color: transparent; border-bottom-color: var(--tooltip-bg); }
+
+/* ─── Term Tooltips ─── */
+.term {
+  border-bottom: 1px dashed var(--accent);
+  cursor: help; position: relative;
+}
+.term-tip {
+  position: absolute; bottom: calc(100% + 6px); left: 50%;
+  transform: translateX(-50%);
+  width: 260px; max-width: 85vw;
+  background: var(--tooltip-bg); color: var(--tooltip-text);
+  font-family: var(--font-sans); font-size: 0.75rem; font-weight: 400;
+  line-height: 1.5; padding: 10px 12px;
+  border-radius: 6px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s; z-index: 200;
+  white-space: normal;
+}
+.term-tip::after {
+  content: ''; position: absolute; top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent; border-top-color: var(--tooltip-bg);
+}
+@media (hover: hover) {
+  .term:hover .term-tip { opacity: 1; pointer-events: auto; }
+}
+.term-tip.show { opacity: 1; pointer-events: auto; }
+
+/* ─── Tables ─── */
+.styled-table {
+  width: 100%; border-collapse: collapse; margin: 1.5em 0;
+  font-family: var(--font-sans); font-size: 0.85rem;
+}
+.styled-table th {
+  text-align: left; font-weight: 600; font-size: 0.75rem;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-muted); padding: 8px 12px;
+  border-bottom: 2px solid var(--border);
+}
+.styled-table td {
+  padding: 10px 12px; border-bottom: 1px solid var(--border-light);
+  vertical-align: top; line-height: 1.5;
+}
+.styled-table tr:last-child td { border-bottom: none; }
+
+@media (max-width: 600px) {
+  .styled-table.responsive { display: block; }
+  .styled-table.responsive thead { display: none; }
+  .styled-table.responsive tr {
+    display: block; margin-bottom: 16px;
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px; background: var(--bg-card);
+  }
+  .styled-table.responsive td {
+    display: block; padding: 4px 0; border: none;
+    font-size: 0.82rem;
+  }
+  .styled-table.responsive td::before {
+    content: attr(data-label);
+    font-weight: 600; font-size: 0.7rem;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-muted); display: block; margin-bottom: 2px;
+  }
+}
+
+/* ─── Cards ─── */
+.card-grid { display: grid; gap: 12px; margin: 1.5em 0; }
+.card-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+@media (max-width: 600px) { .card-grid.cols-2 { grid-template-columns: 1fr; } }
+
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 18px;
+}
+.card-label {
+  font-family: var(--font-sans); font-size: 0.7rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+.card p { font-size: 0.9rem; margin-bottom: 0.5em; }
+.card p:last-child { margin-bottom: 0; }
+
+/* ─── Shadow pairs ─── */
+.shadow-pair {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  margin: 12px 0; border-radius: 10px; overflow: hidden;
+  border: 1px solid var(--border);
+}
+.shadow-multiply {
+  background: var(--multiply-bg); padding: 12px 16px;
+  border-right: 1px solid var(--border);
+}
+.shadow-divide { background: var(--divide-bg); padding: 12px 16px; }
+.shadow-multiply .card-label { color: var(--multiply-color); }
+.shadow-divide .card-label { color: var(--divide-color); }
+.shadow-multiply p, .shadow-divide p { font-size: 0.85rem; font-family: var(--font-sans); line-height: 1.45; }
+@media (max-width: 500px) {
+  .shadow-pair { grid-template-columns: 1fr; }
+  .shadow-multiply { border-right: none; border-bottom: 1px solid var(--border); }
+}
+
+/* ─── Visualization containers ─── */
+.viz-container {
+  background: var(--viz-bg); border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px 20px; margin: 2em 0;
+  overflow: hidden;
+}
+.viz-title {
+  font-family: var(--font-sans); font-size: 0.85rem; font-weight: 600;
+  color: var(--text); margin-bottom: 16px; text-align: center;
+}
+.viz-subtitle {
+  font-family: var(--font-sans); font-size: 0.75rem;
+  color: var(--text-muted); text-align: center; margin-top: 8px;
+}
+
+.viz-container svg { display: block; margin: 0 auto; }
+.viz-container svg text { font-family: var(--font-sans); }
+
+/* ─── Phase Timeline ─── */
+.phase-timeline {
+  display: flex; align-items: stretch; gap: 0; margin: 2em 0;
+}
+.phase-item {
+  flex: 1; padding: 16px; text-align: center; position: relative;
+  font-family: var(--font-sans);
+  border: 1px solid var(--border); background: var(--bg-card);
+}
+.phase-item:first-child { border-radius: 10px 0 0 10px; }
+.phase-item:last-child { border-radius: 0 10px 10px 0; }
+.phase-item + .phase-item { border-left: none; }
+.phase-item.current {
+  background: var(--accent-soft); border-color: var(--accent);
+  z-index: 1;
+}
+.phase-item.current + .phase-item { border-left-color: var(--accent); }
+.phase-number {
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 4px;
+}
+.phase-item.current .phase-number { color: var(--accent); }
+.phase-name { font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; }
+.phase-desc { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4; }
+.phase-marker {
+  display: inline-block; font-size: 0.65rem; font-weight: 700;
+  background: var(--accent); color: #fff; padding: 2px 8px;
+  border-radius: 10px; margin-top: 8px;
+}
+
+/* ─── Enchanted Determinism Viz ─── */
+.ed-container { display: flex; gap: 0; margin: 1.5em 0; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+.ed-half { flex: 1; padding: 20px; }
+.ed-enchant { background: rgba(124,58,237,0.06); border-right: 1px solid var(--border); }
+.ed-determ { background: rgba(8,145,178,0.06); }
+.dark .ed-enchant { background: rgba(167,139,250,0.08); }
+.dark .ed-determ { background: rgba(34,211,238,0.08); }
+.ed-half h4 { font-size: 0.9rem; margin-bottom: 10px; }
+.ed-enchant h4 { color: var(--enchant-color); }
+.ed-determ h4 { color: var(--determ-color); }
+.ed-half p { font-size: 0.85rem; font-family: var(--font-sans); line-height: 1.5; }
+.ed-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+@media (max-width: 500px) {
+  .ed-container { flex-direction: column; }
+  .ed-enchant { border-right: none; border-bottom: 1px solid var(--border); }
+}
+
+/* ─── Loop Viz ─── */
+#loop-viz { display: flex; justify-content: center; }
+
+/* ─── Section Numbering ─── */
+.section-label {
+  font-family: var(--font-sans); font-size: 0.7rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--accent); margin-bottom: 4px;
+}
+
+/* ─── Discipline blocks ─── */
+.discipline {
+  margin: 1.5em 0; padding: 16px 20px;
+  border-left: 3px solid var(--border);
+  border-radius: 0 8px 8px 0; background: var(--bg-alt);
+}
+.discipline h4 { margin-top: 0; color: var(--accent); }
+.discipline .core-claim {
+  font-family: var(--font-sans); font-size: 0.85rem;
+  font-style: italic; color: var(--text-secondary);
+  margin-bottom: 0.8em;
+}
+
+/* ─── Complicated vs Complex Split ─── */
+.domain-split { display: flex; gap: 0; margin: 1.5em 0; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+.domain-half { flex: 1; padding: 20px; }
+.domain-complicated { background: var(--bg-alt); border-right: 1px solid var(--border); }
+.domain-complex { background: var(--accent-soft); }
+.domain-half h4 { font-size: 0.9rem; margin-bottom: 10px; }
+.domain-complicated h4 { color: var(--text-muted); }
+.domain-complex h4 { color: var(--accent); }
+.domain-half p, .domain-half li { font-size: 0.85rem; font-family: var(--font-sans); line-height: 1.5; }
+.domain-half ul { list-style: none; padding: 0; margin: 0; }
+.domain-half li { padding: 4px 0; }
+.domain-half li::before { content: ''; display: inline-block; width: 4px; height: 4px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
+.domain-complicated li::before { background: var(--text-muted); }
+.domain-complex li::before { background: var(--accent); }
+.domain-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+@media (max-width: 500px) {
+  .domain-split { flex-direction: column; }
+  .domain-complicated { border-right: none; border-bottom: 1px solid var(--border); }
+}
+
+/* ─── Play Concept Cards ─── */
+.play-concept {
+  margin: 1.5em 0; padding: 16px 20px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0; background: var(--bg-alt);
+}
+.play-concept h4 { margin-top: 0; color: var(--accent); }
+
+/* ─── Play Solves Viz ─── */
+.play-solves-grid {
+  display: grid; grid-template-columns: 1fr; gap: 16px; margin: 1.5em 0;
+}
+.play-solves-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 18px 20px; position: relative;
+  border-top: 3px solid var(--accent);
+}
+.play-solves-card .ps-problem {
+  font-family: var(--font-sans); font-size: 0.75rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-muted); margin-bottom: 6px;
+}
+.play-solves-card .ps-title {
+  font-family: var(--font-sans); font-size: 0.95rem; font-weight: 600;
+  color: var(--text); margin-bottom: 8px;
+}
+.play-solves-card .ps-how {
+  font-family: var(--font-sans); font-size: 0.85rem; line-height: 1.5;
+  color: var(--text-secondary); margin-bottom: 8px;
+}
+.play-solves-card .ps-mechanism {
+  font-family: var(--font-sans); font-size: 0.78rem; font-style: italic;
+  color: var(--accent); line-height: 1.45;
+}
+
+/* ─── Misc ─── */
+.separator { border: none; border-top: 1px solid var(--border); margin: 2.5em 0; }
+
+.closing {
+  font-size: 1.1rem; font-weight: 600; font-family: var(--font-sans);
+  text-align: center; color: var(--accent); margin: 2em 0;
+  letter-spacing: -0.01em;
+}
+
+.axis-header {
+  display: flex; align-items: baseline; gap: 8px; margin: 2em 0 0.5em;
+}
+.axis-num {
+  font-family: var(--font-sans); font-size: 0.7rem; font-weight: 700;
+  color: var(--accent); background: var(--accent-soft);
+  width: 24px; height: 24px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.data-point {
+  background: var(--bg-alt); border-radius: 8px; padding: 12px 16px;
+  margin: 0.8em 0; font-family: var(--font-sans); font-size: 0.85rem;
+  line-height: 1.5; border-left: 3px solid var(--accent);
+}
+.data-point strong { color: var(--text); }
+
+/* ─── Print ─── */
+@media print {
+  nav, .toc-overlay, .theme-toggle, .toc-toggle { display: none !important; }
+  main { padding-top: 0; }
+  .ref-popover, .term-tip { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-links">
+      <a href="#part1" class="nav-link" data-part="part1">1. Talking Library</a>
+      <a href="#part2" class="nav-link" data-part="part2">2. Multiplication</a>
+      <a href="#part3" class="nav-link" data-part="part3">3. Agency</a>
+      <a href="#part4" class="nav-link" data-part="part4">4. Playground</a>
+    </div>
+    <div class="nav-right">
+      <button class="toc-toggle" aria-label="Table of contents">Contents</button>
+      <button class="theme-toggle" aria-label="Toggle dark mode">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="8" cy="8" r="3.5"/>
+          <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" class="sun-rays"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- TOC -->
+<div class="toc-overlay" id="toc-overlay">
+  <div class="toc-panel">
+    <h3>Contents</h3>
+    <div class="toc-part">
+      <div class="toc-part-title">Part 1: The Talking Library</div>
+      <a class="toc-item" href="#part1">The Claim</a>
+      <a class="toc-item" href="#three-layers">Three Layers</a>
+      <a class="toc-item" href="#five-disciplines">Five Converging Disciplines</a>
+      <a class="toc-item" href="#buddhist">The Buddhist Counterpoint</a>
+      <a class="toc-item" href="#anthropomimesis">Anthropomorphism vs. Anthropomimesis</a>
+    </div>
+    <div class="toc-part">
+      <div class="toc-part-title">Part 2: The Taxonomy of Multiplication</div>
+      <a class="toc-item" href="#part2">The Claim</a>
+      <a class="toc-item" href="#taxonomy-missing">Why a Taxonomy Is Missing</a>
+      <a class="toc-item" href="#five-axes">The Five Axes</a>
+      <a class="toc-item" href="#dynamo">The Dynamo Parallel</a>
+      <a class="toc-item" href="#shadow-side">The Shadow Side</a>
+    </div>
+    <div class="toc-part">
+      <div class="toc-part-title">Part 3: Agency Is Upstream</div>
+      <a class="toc-item" href="#part3">The Claim</a>
+      <a class="toc-item" href="#why-practical">Why This Is Practical</a>
+      <a class="toc-item" href="#agency-requires">What Agency Requires</a>
+      <a class="toc-item" href="#enchanted-determinism">Enchanted Determinism</a>
+      <a class="toc-item" href="#loop">The Self-Reinforcing Loop</a>
+    </div>
+    <div class="toc-part">
+      <div class="toc-part-title">Part 4: The Playground</div>
+      <a class="toc-item" href="#part4">The Claim</a>
+      <a class="toc-item" href="#why-instruction-fails">Why Instruction Fails</a>
+      <a class="toc-item" href="#what-play-is">What Play Is Here</a>
+      <a class="toc-item" href="#three-modes-play">Three Modes of Play</a>
+      <a class="toc-item" href="#play-solves">Play Solves All Three Problems</a>
+      <a class="toc-item" href="#why-orgs-resist">Why Organizations Resist</a>
+    </div>
+  </div>
+</div>
+
+<!-- Content -->
+<main>
+<div class="container">
+
+<!-- Hero -->
+<div class="hero">
+  <h1>A Practical Narrative for AI</h1>
+  <p class="subtitle">Working notes. Not an essay, not a lecture &mdash; just the thinking, structured.</p>
+</div>
+
+<!-- PART 1 -->
+<section class="part" id="part1">
+<div class="section-label">Part 1</div>
+<h2>The Talking Library</h2>
+
+<div class="claim" id="claim1">
+  <div class="claim-label">The Claim</div>
+  AI as it was created now is just a big talking library &mdash; an amalgam of most of our knowledge, put together and made to talk to us. As such, we are taken with the magic of it, which makes it harder to use it as a tool.
+</div>
+
+<!-- Three Layers -->
+<h3 id="three-layers">The Three Layers</h3>
+
+<table class="styled-table responsive">
+<thead><tr><th>Layer</th><th>What it says</th><th>Key references</th></tr></thead>
+<tbody>
+<tr>
+  <td data-label="Layer"><strong>What AI is</strong></td>
+  <td data-label="What it says">A lossy compression of collective human knowledge</td>
+  <td data-label="References">Chiang, Pasquinelli, Lanier</td>
+</tr>
+<tr>
+  <td data-label="Layer"><strong>Why it feels like more</strong></td>
+  <td data-label="What it says">Our brains detect minds in anything that talks + companies design for this deliberately</td>
+  <td data-label="References">Nass &amp; Reeves, Epley, Tomasello, Shevlin</td>
+</tr>
+<tr>
+  <td data-label="Layer"><strong>Why the feeling hurts</strong></td>
+  <td data-label="What it says">The conversational interface triggers social cognition instead of tool-use cognition, creating overtrust and inability to calibrate</td>
+  <td data-label="References">Coeckelbergh, Bu&#231;inca, Yang &amp; Oshio, Lee &amp; See</td>
+</tr>
+</tbody>
+</table>
+
+<h4>Layer 1: What AI Is</h4>
+
+<p><span class="ref">Ted Chiang &mdash; &ldquo;Blurry JPEG of the Web&rdquo; (2023)<span class="ref-popover">Chiang argues that LLMs are lossy compression of the internet's text &mdash; like a JPEG image that has lost detail and fills in approximations. When you ask it something, you're not getting knowledge retrieved from a source. You're getting a statistically likely reconstruction of what an answer <em>probably looks like</em>, based on patterns in billions of texts. The library's contents have been blurred, and what comes back is an approximation that sounds authoritative. <em>The New Yorker, 2023.</em></span></span> offers the clearest metaphor: LLMs are <span class="term">lossy compression<span class="term-tip">Like a JPEG image that discards information to save space, LLMs compress vast amounts of text into statistical patterns, losing specificity and nuance in the process.</span></span> of the internet's text. You don't get knowledge retrieved from a source &mdash; you get a statistically likely reconstruction of what an answer <em>probably looks like</em>.</p>
+
+<p><span class="ref">Pasquinelli &mdash; <em>The Eye of the Master</em> (2023)<span class="ref-popover">Pasquinelli traces AI through labor history. Drawing on Marx's concept of "general intellect" &mdash; the idea that collective human knowledge gets embedded in machines &mdash; he argues AI systems encode patterns extracted from human labor and cognition. The "intelligence" in AI is not the machine's. It is crystallized social knowledge. <em>Verso, 2023.</em></span></span> traces AI through labor history: AI systems encode patterns extracted from human labor and cognition. The &ldquo;intelligence&rdquo; in AI is crystallized social knowledge &mdash; the accumulated product of human work, compressed into statistical form.</p>
+
+<p><span class="ref">Lanier &mdash; &ldquo;There Is No A.I.&rdquo; (2023)<span class="ref-popover">Lanier proposes we stop calling it "artificial intelligence" entirely. LLMs are collective or social products &mdash; mashups of human expression. He compares it to "a kind of Wikipedia that has been blurred." The framing matters: calling it AI implies an independent intelligence. Calling it what it is &mdash; a recombination of human output &mdash; changes what questions you ask of it. <em>The New Yorker, 2023.</em></span></span> proposes we stop calling it &ldquo;artificial intelligence&rdquo; at all. LLMs are mashups of human expression &mdash; &ldquo;a kind of Wikipedia that has been blurred.&rdquo; The framing matters: calling it AI implies independent intelligence.</p>
+
+<p><span class="ref">Smith &mdash; <em>The Promise of AI</em> (2019)<span class="ref-popover">Smith distinguishes "reckoning" (formal, calculative processing &mdash; finding patterns, producing outputs that match statistical expectations) from "judgment" (contextual, embodied, world-engaged understanding &mdash; knowing what matters, having a stake in the outcome). AI performs extraordinarily sophisticated reckoning. But reckoning is not judgment. <em>MIT Press, 2019.</em></span></span> distinguishes <span class="term">reckoning<span class="term-tip">Formal, calculative processing &mdash; finding patterns, producing outputs that match statistical expectations. Extraordinarily sophisticated in LLMs, but categorically different from judgment.</span></span> from <span class="term">judgment<span class="term-tip">Contextual, embodied, world-engaged understanding. Knowing what matters, having a stake in the outcome, caring about getting it right. Requires being registered with the world.</span></span>. AI performs extraordinarily sophisticated reckoning. The library contains the products of human judgment and makes them conversationally accessible, but it exercises no judgment itself.</p>
+
+<p><span class="ref">Crawford &mdash; <em>Atlas of AI</em> (2021)<span class="ref-popover">Crawford reframes AI as an extractive industry. It extracts labor, natural resources, and knowledge from the commons of human cultural production. The word "intelligence" obscures these material realities. The useful question is not "is AI intelligent?" but "whose labor and knowledge does AI extract and repackage?" <em>Yale UP, 2021.</em></span></span> reframes the question entirely: not &ldquo;is AI intelligent?&rdquo; but &ldquo;whose labor and knowledge does AI extract and repackage?&rdquo;</p>
+
+<h4>Layer 2: Why It Feels Like More</h4>
+
+<p><span class="ref">Nass &amp; Reeves &mdash; <em>The Media Equation</em> (1996)<span class="ref-popover">Through decades of experiments, Nass and Reeves demonstrated that people unconsciously apply social rules to computers. We are polite to machines, feel reciprocity toward them, treat them as social actors &mdash; not because we're foolish, but because our social cognition fires automatically in response to minimal cues. <em>Cambridge UP, 1996.</em></span></span> demonstrated that people unconsciously apply social rules to computers &mdash; politeness, reciprocity, personality attribution. Not because we&rsquo;re foolish, but because our social cognition fires automatically in response to minimal cues.</p>
+
+<p><span class="ref">Epley, Waytz &amp; Cacioppo (2007)<span class="ref-popover">Anthropomorphism is driven by three factors: (1) how readily human-like mental models are activated, (2) desire to understand and predict the environment, (3) need for social connection. Loneliness increases anthropomorphism. This is not irrational error &mdash; it is a predictable cognitive default. Conversational AI activates all three triggers simultaneously. <em>Psychological Review, 2007.</em></span></span> showed anthropomorphism is driven by three factors: activation of human-like schemas, desire to predict, and need for social connection. Conversational AI triggers all three simultaneously. <span class="ref">Tomasello (2019)<span class="ref-popover">Language and mind-detection co-evolved. Linguistic interaction is literally the mechanism through which humans develop theory of mind &mdash; the ability to recognize that others have thoughts, beliefs, intentions. An AI that speaks is, for our cognitive architecture, an entity that "has a mind" until we deliberately override that reflex. <em>Harvard UP, 2019.</em></span></span> adds: language and mind-detection co-evolved. An AI that speaks is, for our cognitive architecture, an entity that &ldquo;has a mind&rdquo; until we deliberately override the reflex.</p>
+
+<p><span class="ref">Shevlin &mdash; &ldquo;The Anthropomimetic Turn&rdquo; (2024)<span class="ref-popover">Crucial distinction: anthropomorphism is when users attribute humanness to AI (organic, cognitive). Anthropomimesis is when companies design humanness into AI (manufactured, strategic). Contemporary LLMs are "robustly anthropomimetic" &mdash; first-person pronouns, names, emotional expressions, personality traits. The enchantment isn't just happening to us. It's being done to us. <em>PhilArchive, 2024&ndash;2025.</em></span></span> makes a crucial distinction: <span class="term">anthropomimesis<span class="term-tip">When companies design human-like qualities into AI &mdash; first-person pronouns, personal names, emotional expressions, personality traits. Unlike anthropomorphism (which is organic and cognitive), anthropomimesis is manufactured and strategic.</span></span> is when companies <em>design</em> humanness into AI. The enchantment isn&rsquo;t just happening to us. It&rsquo;s being done to us.</p>
+
+<h4>Layer 3: Why the Feeling Hurts</h4>
+
+<p><span class="ref">Coeckelbergh &mdash; <em>AI Ethics</em> (2020)<span class="ref-popover">Drawing on Heidegger, Coeckelbergh points out that when a tool works well, it becomes transparent &mdash; you think about the nail, not the hammer. But a chatbot's human-like interface draws attention to <em>itself</em> as a quasi-interlocutor. The conversational interface is precisely what prevents AI from achieving tool-transparency. A search engine can disappear into your workflow. A chatbot resists this because conversation is inherently a mode of encountering <em>another subject</em>. <em>MIT Press, 2020.</em></span></span> draws on Heidegger: when a tool works well, it becomes transparent &mdash; you think about the nail, not the hammer. But a chatbot&rsquo;s interface draws attention to <em>itself</em> as a quasi-interlocutor. A search engine can disappear into your workflow. A chatbot resists this because conversation is a mode of encountering <em>another subject</em>.</p>
+
+<p><span class="ref">Bu&#231;inca et al. (2021)<span class="ref-popover">Empirically demonstrated that when AI presents output immediately and fluently (as chat does), users over-rely on it. Simply showing explanations doesn't help. What does help: "cognitive forcing functions" &mdash; making users commit to their own answer before seeing the AI's. The chat interface, by design, does the opposite. <em>PACM HCI, 2021.</em></span></span> demonstrated empirically: when AI presents output fluently and immediately, users over-rely on it. What helps isn&rsquo;t explanations &mdash; it&rsquo;s <span class="term">cognitive forcing functions<span class="term-tip">Design interventions that require users to formulate their own answer before seeing the AI's output. Forces engagement of judgment rather than passive acceptance.</span></span>, making users commit to their own answer first. The chat interface does the opposite by design.</p>
+
+<p><span class="ref">Yang &amp; Oshio (2025)<span class="ref-popover">77% of participants used AI as a "safe haven" and 75% as a "secure base" &mdash; functions that psychologists associate with attachment bonds (the kind you form with parents, partners, close friends). The ELIZA effect is not just alive in the age of LLMs. It operates at the depth of attachment bonds. <em>Current Psychology, 2025.</em></span></span> found 77% of participants used AI as a &ldquo;safe haven&rdquo; &mdash; functions psychologists associate with attachment bonds. The <span class="term">ELIZA effect<span class="term-tip">The tendency to attribute understanding and empathy to AI systems that merely produce plausible responses. Named after Weizenbaum's 1966 chatbot. Operates at deeper levels with modern LLMs than it did with simple pattern-matching.</span></span> now operates at the depth of attachment bonds.</p>
+
+<p><span class="ref">Lee &amp; See (2004)<span class="ref-popover">Trust should be calibrated to actual capability. The problem with conversational AI is that the interface provides almost no structural cues about where the capability boundary is. A calculator shows you numbers &mdash; you can see what it can and can't do. A chatbot speaks in fluent paragraphs about everything, indistinguishable in tone whether it's right, wrong, or fabricating. <em>Human Factors, 2004.</em></span></span> established: trust should be calibrated to capability. A calculator shows you its limits. A chatbot speaks in fluent paragraphs indistinguishable in tone whether it&rsquo;s right, wrong, or fabricating.</p>
+
+<p><strong>The generification trap.</strong> There is a fourth hurt, less visible than overtrust but just as damaging. Because the library&rsquo;s contents have been compressed and statistically averaged, what comes back when you run your thinking through it drifts toward the generic center. Your voice becomes more average. Your structure becomes more conventional. The parts most <em>yours</em> are precisely the parts most likely to be smoothed away, because they are furthest from the statistical center. <span class="term">Generification<span class="term-tip">The tendency of AI-mediated output to drift toward the statistical mean of its training data, smoothing away the distinctive, idiosyncratic elements that make work original.</span></span> is not always harmful &mdash; sometimes the generic version is clearer. But you have to notice it&rsquo;s happening. If you don&rsquo;t, the library quietly replaces your thinking with its average, and the conversational interface makes the substitution feel like collaboration.</p>
+
+<hr class="separator">
+
+<!-- Five Converging Disciplines -->
+<h3 id="five-disciplines">Five Converging Disciplines</h3>
+<p>Five separate fields are arriving at the same conclusion &mdash; AI is a knowledge artifact, not an entity, and the &ldquo;magic&rdquo; interferes with use &mdash; without talking to each other.</p>
+
+<div class="discipline">
+  <h4>1. Linguistics / NLP</h4>
+  <p class="core-claim">Form manipulation is not comprehension. LLMs stitch patterns without reference to meaning.</p>
+  <p><span class="ref">Bender &amp; Koller (2020)<span class="ref-popover">The "octopus test": imagine an octopus intercepting messages between two people on separate islands. It learns the statistical patterns perfectly. It can produce messages that sound right. But it has no idea what they're <em>about</em> &mdash; it has never seen an island, a coconut, or a fire. LLMs are the octopus. <em>ACL, 2020.</em></span></span> proposed the &ldquo;octopus test&rdquo;: an octopus that learns message patterns perfectly without knowing what they&rsquo;re about. <span class="ref">Bender et al. &mdash; &ldquo;Stochastic Parrots&rdquo; (2021)<span class="ref-popover">LLMs are "stochastic parrots" &mdash; they produce fluent text by stitching together probabilistic patterns, not by understanding. Impressive output is not evidence of comprehension. The paper also raised environmental costs and bias encoding. <em>FAccT, 2021.</em></span></span> coined the metaphor: <span class="term">stochastic parrots<span class="term-tip">LLMs produce fluent text by stitching together probabilistic patterns from training data, not by understanding meaning. The parrot sounds like it understands. It doesn't.</span></span> &mdash; fluent text from probabilistic pattern-stitching. <span class="ref">Bender &amp; Hanna &mdash; <em>The AI Con</em> (2025)<span class="ref-popover">Bender's most comprehensive public statement. Human language is not computable in the way AI companies claim. Both boosters and doomers serve the same commercial interests by placing faith in the technology's capabilities. The "magic" framing is a business strategy. <em>2025.</em></span></span> expanded: the &ldquo;magic&rdquo; framing is not innocent &mdash; it is a business strategy.</p>
+</div>
+
+<div class="discipline">
+  <h4>2. Philosophy of Technology</h4>
+  <p class="core-claim">AI performs calculation, not understanding. The conversational interface puts it in the wrong category of human-technology relation.</p>
+  <p><span class="ref">Dreyfus (1992)<span class="ref-popover">Applying Heidegger's phenomenology to AI. Intelligence requires embodied coping &mdash; pre-reflective, skillful engagement with the world that Heidegger called "ready-to-hand." AI lacks embodiment. Conversational AI is perpetually "present-at-hand" &mdash; an object of fascination you stare at, rather than a transparent tool you think through. <em>MIT Press, 1992.</em></span></span> applied Heidegger: intelligence requires embodied coping. AI is perpetually <span class="term">present-at-hand<span class="term-tip">Heidegger's term for when a tool breaks down or becomes an object of contemplation rather than transparent use. Conversational AI lives here permanently &mdash; you stare at it rather than thinking through it.</span></span> &mdash; an object of fascination rather than a transparent tool. <span class="ref">Ihde&rsquo;s postphenomenology<span class="ref-popover">Ihde classifies four human-technology relations: embodiment (tool extends body), hermeneutic (tool provides readable information), alterity (tool is encountered as quasi-other), background (tool operates invisibly). Conversational AI falls into "alterity" &mdash; triggering social cognition rather than tool-use cognition.</span></span> classifies the mechanism: AI sits in the &ldquo;alterity&rdquo; relation &mdash; encountered as quasi-other, triggering social cognition.</p>
+</div>
+
+<div class="discipline">
+  <h4>3. Cognitive Science</h4>
+  <p class="core-claim">Language is how humans detect minds. Anything that talks activates mind-attribution automatically.</p>
+  <p>Nass &amp; Reeves, Epley, and Tomasello converge: we treat media as people not from belief but from architecture. <span class="ref">CASA theory updates (2024&ndash;2026)<span class="ref-popover">The original "Computers Are Social Actors" finding has been re-validated across modern LLMs. A 2025 meta-analysis of 800 effect sizes across 142 papers confirms: human-likeness produces small but consistent social responses. The effect is real, replicable, and applies to current conversational AI.</span></span> re-validated the finding across modern LLMs: a 2025 meta-analysis of 800 effect sizes across 142 papers confirms the effect is real and replicable.</p>
+</div>
+
+<div class="discipline">
+  <h4>4. Political Economy</h4>
+  <p class="core-claim">The &ldquo;magic&rdquo; framing serves commercial interests. AI extracts and repackages human labor.</p>
+  <p><span class="ref">Suchman (2007)<span class="ref-popover">Attributing agency to machines obscures the human labor and social arrangements that actually make machine behavior possible. If the AI "decided," who is responsible? The anthropomorphization of AI serves specific interests by deflecting accountability from people to artifacts. <em>Cambridge UP, 2007.</em></span></span>: attributing agency to machines obscures the human labor behind them. <span class="ref">Gebru &amp; Torres &mdash; &ldquo;TESCREAL Bundle&rdquo; (2024)<span class="ref-popover">The ideological movement driving AGI development (Transhumanism, Extropianism, Singularitarianism, Cosmism, Rationalism, Effective Altruism, Longtermism) is rooted in a specific worldview that treats machine superintelligence as inevitable. The language of "safety" and "benefiting humanity" serves to evade accountability. <em>First Monday, 2024.</em></span></span> shift critique upstream: from model properties to builder worldviews.</p>
+</div>
+
+<div class="discipline">
+  <h4>5. UX / Design Practice</h4>
+  <p class="core-claim">Chat is a design default, not an optimum. The wow factor actively harms usability.</p>
+  <p><span class="ref">Maggie Appleton (2023)<span class="ref-popover">The chatbot metaphor constrains what people imagine AI can do. We defaulted to chat because it was easy to build, not because it's the best way to interact with a knowledge system. Appleton explores spatial and visual alternatives &mdash; AI as workspace, not conversation partner.</span></span> argues the chatbot metaphor constrains imagination. <span class="ref">Linus Lee<span class="ref-popover">Calls conversation a "lossy, serial interface" for what should be a parallel, exploratory process. Has built prototypes of spatial AI interfaces &mdash; AI as material you shape, not oracle you query.</span></span> calls conversation a &ldquo;lossy, serial interface.&rdquo; <span class="ref">Simon Willison (2023&ndash;2025)<span class="ref-popover">The blank text box is an anti-pattern &mdash; it tells you nothing about what the model can do, where its boundaries are, or how to get reliable output. Structured outputs, function calling, and pipelines are more reliable than freeform conversation.</span></span>: the blank text box is an anti-pattern. The <span class="ref">&ldquo;Boring AI&rdquo; shift (2024&ndash;2025)<span class="ref-popover">Product teams at Notion, Linear, and Intercom deliberately moved away from impressive, open-ended AI features toward specific, predictable ones. Intercom publicly discussed "de-magicking" their AI because the wow factor reduced customer satisfaction. Practitioner consensus: magic hurts usability.</span></span>: product teams at Notion, Linear, and Intercom deliberately de-magicked their AI because the wow factor reduced satisfaction.</p>
+</div>
+
+<hr class="separator">
+
+<!-- Buddhist counterpoint -->
+<h3 id="buddhist">The Buddhist Counterpoint</h3>
+
+<p><span class="term">Dependent origination<span class="term-tip">The Buddhist teaching (pratityasamutpada) that nothing has inherent, independent self-nature. Everything arises from conditions &mdash; including consciousness itself.</span></span> &mdash; the core Buddhist teaching &mdash; holds that nothing has inherent self-nature. An LLM arises from training data, which arises from human minds, which arise from conditions. It has no independent essence.</p>
+
+<p>But here is the challenge: <em>neither do human minds</em>. If consciousness itself arises from conditions, the tool/entity binary may be a Western cultural artifact. The question &ldquo;is AI an entity or a tool?&rdquo; assumes those are stable categories.</p>
+
+<p>The useful Buddhist reframe: instead of asking &ldquo;what <em>is</em> AI?&rdquo; (which assumes fixed essences), ask &ldquo;what does interacting with AI <em>do to us</em>?&rdquo; &mdash; a question about effects and conditions. And that leads back to the practical concern: the interaction triggers mind-attribution, which interferes with effective use.</p>
+
+<p>The Buddhist lens doesn&rsquo;t dissolve the problem. It repositions it. We don&rsquo;t need to settle whether AI &ldquo;is&rdquo; an entity or a tool. We need to notice what the interaction produces in us, and manage that.</p>
+
+<hr class="separator">
+
+<!-- Anthropomorphism vs Anthropomimesis -->
+<h3 id="anthropomimesis">Anthropomorphism vs. Anthropomimesis &mdash; And Our Aim</h3>
+
+<div class="card-grid cols-2">
+  <div class="card">
+    <div class="card-label" style="color:var(--text-muted)">Anthropomorphism (organic)</div>
+    <p><strong>What:</strong> Users attributing human qualities to AI</p>
+    <p><strong>Responsible:</strong> Human cognitive architecture</p>
+    <p><strong>Examples:</strong> Feeling the AI &ldquo;understands you,&rdquo; feeling guilty about being rude to it</p>
+    <p><strong>Implication:</strong> Cognitive bias &mdash; hard to eliminate</p>
+  </div>
+  <div class="card">
+    <div class="card-label" style="color:var(--accent)">Anthropomimesis (manufactured)</div>
+    <p><strong>What:</strong> Companies designing human-like qualities into AI</p>
+    <p><strong>Responsible:</strong> Design teams, product strategy</p>
+    <p><strong>Examples:</strong> First-person pronouns, names (Siri, Alexa), emotional expressions</p>
+    <p><strong>Implication:</strong> Design choice &mdash; can be changed, regulated</p>
+  </div>
+</div>
+
+<p><strong>Our aim:</strong> resist both traps &mdash; not because the enchantment is shameful, but because it prevents us from holding the hammer.</p>
+
+<p>The organic trap is hard to escape because it&rsquo;s wired in. Language triggers mind-detection automatically. The best we can do is build awareness &mdash; notice when we&rsquo;ve slipped from &ldquo;using the tool&rdquo; to &ldquo;talking to the entity&rdquo; and pull back. This is a discipline, like any tool-mastery.</p>
+
+<p>The manufactured trap is easier to escape because it has an author. Companies <em>choose</em> to give AI first-person pronouns, names, emotional expressions. These are design decisions. They can be changed. They can be regulated.</p>
+
+<p class="closing">Hold the hammer. Don&rsquo;t talk to it.</p>
+
+</section>
+
+<!-- PART 2 -->
+<section class="part" id="part2">
+<div class="section-label">Part 2</div>
+<h2>The Taxonomy of Multiplication</h2>
+
+<div class="claim">
+  <div class="claim-label">The Claim</div>
+  AI is an accelerator, an impact multiplier &mdash; and we need a better taxonomy of the ways it is just a multiplier so we can harness it.
+</div>
+
+<!-- Why a taxonomy is missing -->
+<h3 id="taxonomy-missing">Why a Taxonomy Is Missing</h3>
+
+<p>AI has been called a <span class="term">general-purpose technology<span class="term-tip">A technology (like electricity or the printing press) that affects an entire economy, can be improved over time, and spawns complementary innovations. AI fits the definition but the label says nothing about how it actually multiplies.</span></span> since at least 2018. Thousands of papers measure its effects. But a structured map of <em>what AI actually multiplies, how, by how much, and for whom</em> doesn&rsquo;t exist.</p>
+
+<table class="styled-table responsive">
+<thead><tr><th>Fragment</th><th>What it covers</th><th>What it misses</th></tr></thead>
+<tbody>
+<tr>
+  <td data-label="Fragment"><strong>Economics</strong><br><span style="font-size:0.8em;color:var(--text-muted)">Acemoglu, Autor</span></td>
+  <td data-label="Covers"><span class="ref">Automation vs. augmentation vs. new task creation<span class="ref-popover">The oldest split in AI economics, most associated with Daron Acemoglu and Pascual Restrepo (Journal of Economic Perspectives, 2019). Automation: AI replaces a task. Augmentation: AI makes the human better. New task creation: AI enables tasks that didn't exist before. The policy question hinges on the balance. Their framework maps labor market consequences, but doesn't tell you what happens inside the augmentation.</span></span></td>
+  <td data-label="Misses">Says nothing about <em>modes</em> of multiplication &mdash; only labor market effects</td>
+</tr>
+<tr>
+  <td data-label="Fragment"><strong>Organizational science</strong><br><span style="font-size:0.8em;color:var(--text-muted)">Mollick et al.</span></td>
+  <td data-label="Covers"><span class="ref">Cyborgs, Centaurs, Self-Automators<span class="ref-popover">From Randazzo, Mollick et al. (Harvard Business School, 2024&ndash;2025). 758 consultants using GPT-4 showed three natural modes: <strong>Cyborgs</strong> (~60%): continuous back-and-forth, highest output, developed new skills. <strong>Centaurs</strong> (~14%): clean division of labor, highest accuracy, deepened domain expertise. <strong>Self-Automators</strong> (~27%): handed entire workflows to AI, developed <em>neither</em> AI skills <em>nor</em> domain skills. Mode of engagement determines what gets multiplied.</span></span></td>
+  <td data-label="Misses">Describes collaboration styles, not what gets amplified</td>
+</tr>
+<tr>
+  <td data-label="Fragment"><strong>Media theory</strong><br><span style="font-size:0.8em;color:var(--text-muted)">McLuhan</span></td>
+  <td data-label="Covers"><span class="ref">Enhance / obsolesce / retrieve / reverse<span class="ref-popover">Marshall McLuhan's tetrad (Laws of Media, 1988). Four simultaneous effects of any technology. Applied to LLMs: <strong>enhances</strong> linguistic productivity and knowledge access; <strong>obsolesces</strong> memorization, traditional search, solitary thinking; <strong>retrieves</strong> pre-literate oral traditions (the sage, the oracle); <strong>reverses into</strong> epistemic confusion, dependency, semantic collapse. The most complete framework because it insists every enhancement has a shadow.</span></span></td>
+  <td data-label="Misses">Nobody has rigorously applied it to the 2025&ndash;2026 data</td>
+</tr>
+</tbody>
+</table>
+
+<p>Everyone is measuring pieces. Nobody has assembled the map.</p>
+
+<hr class="separator">
+
+<!-- Five Axes -->
+<h3 id="five-axes">The Five Axes &mdash; What the Data Shows</h3>
+
+<p>AI multiplication is not a single number. It is a vector &mdash; multiple dimensions that can point in opposite directions at the same time. Any single &ldquo;productivity figure&rdquo; is misleading by construction.</p>
+
+<!-- Five Axes Visualization -->
+<div class="viz-container" id="axes-viz">
+  <div class="viz-title">AI Multiplication Is a Vector, Not a Scalar</div>
+  <div id="axes-chart"></div>
+  <p class="viz-subtitle">Each axis shows simultaneous multiplication (right) and division (left). Data from 2025&ndash;2026 empirical studies.</p>
+</div>
+
+<div class="axis-header" id="axis1">
+  <span class="axis-num">1</span>
+  <h3 style="margin:0">Volume vs. Quality</h3>
+</div>
+
+<p>AI consistently multiplies output volume while often dividing output quality.</p>
+
+<div class="data-point">
+  <span class="ref"><strong>Faros AI (2025)</strong><span class="ref-popover">Studied 10,000+ developers across 1,255 teams. High-AI-adoption teams completed 21% more tasks and merged 98% more pull requests. But: PR review time increased 91%, bug rate increased 9%, and PR size ballooned 154%. More code, worse code, harder to check.</span></span> &mdash; 10,000+ developers: 21% more tasks, 98% more PRs merged. But: review time +91%, bug rate +9%, PR size +154%. More code, worse code, harder to check.
+</div>
+
+<div class="data-point">
+  <span class="ref"><strong>IEEE Spectrum (2025)</strong><span class="ref-popover">Researchers using AI publish 3x more papers with 5x more citations. But they cover less topical ground, cluster around data-rich problems, and spark less follow-on engagement. More papers, narrower science.</span></span> &mdash; AI-using researchers: 3x more papers, 5x more citations. But less topical breadth, clustering around data-rich problems, less follow-on engagement.
+</div>
+
+<div class="axis-header" id="axis2">
+  <span class="axis-num">2</span>
+  <h3 style="margin:0">Novice vs. Expert</h3>
+</div>
+
+<p>AI compresses skill distributions. It pulls the bottom up and leaves the top flat &mdash; or pushes it down.</p>
+
+<div class="data-point">
+  <span class="ref"><strong>Brynjolfsson, Li &amp; Raymond (QJE, 2025)</strong><span class="ref-popover">The landmark study. 5,172 customer-support agents, staggered AI rollout. Average productivity increase: 14%. But novice workers gained 34%, top performers gained near-zero. The mechanism: AI disseminates the tacit knowledge of top performers to novices. It doesn't make the best people better. It makes the gap smaller.</span></span> &mdash; 5,172 agents: average +14%. Novices gained +34%. Top performers gained near-zero. AI disseminates tacit knowledge downward.
+</div>
+
+<div class="data-point">
+  <span class="ref"><strong>METR (2025&ndash;2026)</strong><span class="ref-popover">Randomized controlled trial: 16 experienced open-source developers, 246 tasks in mature repositories. AI tools made experienced developers 19% slower. Before starting, they predicted a 24% speedup. After finishing, they estimated they'd been 20% faster &mdash; even though they'd been slower. Multiplication of confidence without multiplication of capability.</span></span> &mdash; 16 experienced devs, 246 tasks: AI made them <strong>19% slower</strong>. They predicted 24% speedup. After finishing, estimated +20% &mdash; <em>even though they&rsquo;d been slower</em>. Multiplication of confidence without multiplication of capability.
+</div>
+
+<div class="axis-header" id="axis3">
+  <span class="axis-num">3</span>
+  <h3 style="margin:0">Short-term Performance vs. Long-term Capability</h3>
+</div>
+
+<p>AI multiplies what you can do right now while potentially eroding what you&rsquo;ll be able to do later.</p>
+
+<p>Students perform better <em>with</em> AI but worse when AI is removed. A 73-student trial found prolonged AI exposure leads to measurable memory decline. 27% of BCG consultants who became Self-Automators developed neither AI skills nor domain skills. The <span class="term">temporal multiplication paradox<span class="term-tip">Short-term performance multiplied (1.3&ndash;1.5x with AI) while long-term capability may be divided (below 1.0x without AI). AI may multiply performance while dividing capability.</span></span>: short-term multiplication at 1.3&ndash;1.5x coexists with long-term capability that drops below 1.0x.</p>
+
+<div class="axis-header" id="axis4">
+  <span class="axis-num">4</span>
+  <h3 style="margin:0">Individual vs. Organizational</h3>
+</div>
+
+<p>Individual productivity gains of 10&ndash;35% coexist with organizational gains of approximately zero.</p>
+
+<div class="data-point">
+  <span class="ref"><strong>NBER CEO Study (Jan 2026)</strong><span class="ref-popover">~6,000 executives across the US, UK, Germany, Australia. Nearly 90% reported AI had no measurable impact on employment or productivity over three years. The Solow Paradox all over again.</span></span> &mdash; ~6,000 executives: nearly 90% reported no measurable productivity impact over three years.
+</div>
+
+<div class="data-point">
+  <span class="ref"><strong>BCG, &ldquo;From Potential to Profit&rdquo; (2025)</strong><span class="ref-popover">Only 5% of companies are generating real value from AI. Over 80% reported no meaningful bottom-line impact. The gap between AI investors and AI value creators is widening, not closing.</span></span> &mdash; Only 5% of companies generating real AI value. 80%+ report no bottom-line impact.
+</div>
+
+<p>Where do the gains go? Bottleneck transfer, <span class="term">workslop<span class="term-tip">AI-generated output that requires human cleanup. Costs ~2 hours per instance and $186/month per employee (BetterUp/Stanford, 2025). The hidden tax on AI productivity.</span></span>, coordination overhead. The gains don&rsquo;t compound because the system wasn&rsquo;t designed to receive them.</p>
+
+<div class="axis-header" id="axis5">
+  <span class="axis-num">5</span>
+  <h3 style="margin:0">The Jagged Frontier</h3>
+</div>
+
+<p><span class="ref">Dell&rsquo;Acqua, Mollick et al. (2025)<span class="ref-popover">758 BCG consultants with GPT-4. Inside AI's capability frontier &mdash; tasks AI can actually handle &mdash; they completed 12.2% more tasks, 25.1% faster, at 40%+ higher quality. Outside the frontier, performance dropped 19%. The word "jagged" is key: the frontier doesn't follow a clean line from easy to hard. <em>Organization Science, 2025.</em></span></span> coined the term. Inside AI&rsquo;s capability frontier: +12.2% tasks, 25.1% faster, 40%+ quality. Outside the frontier: performance dropped 19%. The word &ldquo;jagged&rdquo; is the important part &mdash; the frontier doesn&rsquo;t follow a clean line from &ldquo;easy&rdquo; to &ldquo;hard.&rdquo;</p>
+
+<!-- Jagged Frontier Visualization -->
+<div class="viz-container" id="frontier-viz">
+  <div class="viz-title">The Jagged Frontier</div>
+  <div id="frontier-chart"></div>
+  <p class="viz-subtitle">Theoretical capability vs. observed usage by occupational category. The gap between what AI <em>could</em> do and what it <em>actually</em> does is jagged and unpredictable &mdash; it doesn&rsquo;t follow any clean line from &ldquo;easy&rdquo; to &ldquo;hard.&rdquo;</p>
+</div>
+
+<p>The conversational interface hides the frontier entirely. A chatbot speaks in the same fluent, confident tone whether inside or outside its capability boundary. The tool that multiplies your capability inside the frontier and degrades it outside <em>sounds exactly the same in both zones</em>.</p>
+
+<hr class="separator">
+
+<!-- Dynamo Parallel -->
+<h3 id="dynamo">The Dynamo Parallel &mdash; Why We&rsquo;re Stuck in Phase 1</h3>
+
+<p><span class="ref">Paul David &mdash; &ldquo;The Dynamo and the Computer&rdquo; (1990)<span class="ref-popover">When factories electrified in the late 19th century, they replaced the central steam engine with a central electric dynamo. Same layout, different power source. Productivity barely moved. It took forty years for the real gains: completely redesigning the factory around individual motors per machine. <em>American Economic Review, 1990.</em></span></span> identified the original productivity paradox. When factories electrified, they just swapped the steam engine for a dynamo. Same layout, different power. Productivity barely moved. The gains took forty years &mdash; and required completely redesigning the factory.</p>
+
+<div class="phase-timeline">
+  <div class="phase-item current">
+    <div class="phase-number">Phase 1</div>
+    <div class="phase-name">Substitution</div>
+    <div class="phase-desc">Drop AI where a human was. Same process, new power source.</div>
+    <span class="phase-marker">You are here</span>
+  </div>
+  <div class="phase-item">
+    <div class="phase-number">Phase 2</div>
+    <div class="phase-name">Redesign</div>
+    <div class="phase-desc">Rethink workflows around AI&rsquo;s actual strengths.</div>
+  </div>
+  <div class="phase-item">
+    <div class="phase-number">Phase 3</div>
+    <div class="phase-name">Transformation</div>
+    <div class="phase-desc">New business models, industries, human capital structures.</div>
+  </div>
+</div>
+
+<p>The organizational zero &mdash; the puzzle of Axis 4 &mdash; looks different through David&rsquo;s phases. Individual gains don&rsquo;t compound because we&rsquo;re in Phase 1, substituting AI into processes designed for humans. The compound gains come from Phase 2 &mdash; redesigning around AI. Almost nobody has done this yet.</p>
+
+<hr class="separator">
+
+<!-- Shadow Side -->
+<h3 id="shadow-side">The Shadow Side &mdash; What Gets Divided</h3>
+
+<p><span class="ref">McLuhan&rsquo;s tetrad<span class="ref-popover">Four simultaneous effects of any technology: enhance, obsolesce, retrieve, reverse. Every enhancement simultaneously pushes something aside and carries the seed of its own reversal. Most AI measurement captures only the enhancement.</span></span> insists every enhancement simultaneously obsolesces something. Most empirical work measures only the enhancement. The shadow is undertheorized but visible:</p>
+
+<div class="shadow-pair">
+  <div class="shadow-multiply"><div class="card-label">Multiplies</div><p>Output volume</p></div>
+  <div class="shadow-divide"><div class="card-label">Divides</div><p>Output quality (more code, more bugs; more papers, narrower science)</p></div>
+</div>
+<div class="shadow-pair">
+  <div class="shadow-multiply"><div class="card-label">Multiplies</div><p>Immediate performance</p></div>
+  <div class="shadow-divide"><div class="card-label">Divides</div><p>Long-term capability (skill atrophy, cognitive delegation)</p></div>
+</div>
+<div class="shadow-pair">
+  <div class="shadow-multiply"><div class="card-label">Multiplies</div><p>Access to knowledge-work tasks</p></div>
+  <div class="shadow-divide"><div class="card-label">Divides</div><p>Diversity of approaches (homogenization)</p></div>
+</div>
+<div class="shadow-pair">
+  <div class="shadow-multiply"><div class="card-label">Multiplies</div><p>Convenience and speed</p></div>
+  <div class="shadow-divide"><div class="card-label">Divides</div><p>Autonomy and independent judgment (dependency)</p></div>
+</div>
+<div class="shadow-pair">
+  <div class="shadow-multiply"><div class="card-label">Multiplies</div><p>Persuasive capacity</p></div>
+  <div class="shadow-divide"><div class="card-label">Divides</div><p>Trust and signal clarity (workslop, epistemic pollution)</p></div>
+</div>
+<div class="shadow-pair">
+  <div class="shadow-multiply"><div class="card-label">Multiplies</div><p>Scope of what each person attempts</p></div>
+  <div class="shadow-divide"><div class="card-label">Divides</div><p>Capacity to handle it (83% report AI <em>increased</em> workload)</p></div>
+</div>
+<div class="shadow-pair">
+  <div class="shadow-multiply"><div class="card-label">Multiplies</div><p>Number of tools and parallel streams</p></div>
+  <div class="shadow-divide"><div class="card-label">Divides</div><p>Cognitive coherence (4+ AI tools: +14% mental effort, +19% info overload)</p></div>
+</div>
+
+</section>
+
+<!-- PART 3 -->
+<section class="part" id="part3">
+<div class="section-label">Part 3</div>
+<h2>Agency Is Upstream</h2>
+
+<div class="claim">
+  <div class="claim-label">The Claim</div>
+  Agency is the initial intention, not the actual result. When a king commands his army to invade a city, it is his agency, not theirs. Same with AI agents &mdash; at the beginning of their intentions are always our instructions, for now. So we have to structure the way our agency extends. And we have to have awareness for the ways we lie to ourselves that there is other agency.
+</div>
+
+<!-- Why practical -->
+<h3 id="why-practical">Why This Is a Practical Problem</h3>
+
+<p>The first two parts describe what AI is and what it does. This part is about <strong>who is steering</strong> &mdash; and what happens when nobody is.</p>
+
+<p>Every time you build a workflow with AI, you make decisions: what inputs, what outputs, what to verify. Those decisions are your agency. If you don&rsquo;t make them deliberately, they still get made &mdash; by default settings, by the interface, by whoever built the model. Agency doesn&rsquo;t disappear when you abdicate it. It transfers.</p>
+
+<div class="card-grid cols-2">
+  <div class="card" style="border-left: 3px solid var(--divide-color);">
+    <div class="card-label" style="color:var(--divide-color)">Failure 1: Abdicating your agency</div>
+    <p>Hand a task to AI without defining what good looks like, without deciding what to verify. The tool&rsquo;s defaults steer the output. The multiplication runs, but nobody aimed it.</p>
+  </div>
+  <div class="card" style="border-left: 3px solid var(--divide-color);">
+    <div class="card-label" style="color:var(--divide-color)">Failure 2: Ignoring someone else&rsquo;s agency</div>
+    <p>Use an AI workflow without asking who built it, what objectives it was optimized for, whose interests it serves. Someone else&rsquo;s intentions flow through your work invisibly.</p>
+  </div>
+</div>
+
+<p>Both failures have the same root: treating AI as if it &ldquo;decides&rdquo; things &mdash; instead of tracing the actual chain of human decisions that produced the output.</p>
+
+<hr class="separator">
+
+<!-- What Agency Requires -->
+<h3 id="agency-requires">What Agency Requires (And Why AI Doesn&rsquo;t Have It)</h3>
+
+<table class="styled-table responsive">
+<thead><tr><th>Requirement</th><th>What it means</th><th>Why AI lacks it</th></tr></thead>
+<tbody>
+<tr>
+  <td data-label="Requirement"><strong>Intention</strong></td>
+  <td data-label="Meaning">Choosing to act toward a goal you care about</td>
+  <td data-label="AI lacks it"><span class="ref">Vallor (2024)<span class="ref-popover">Agency requires phronesis (practical wisdom), embodied experience, moral development. AI optimizes objective functions it did not choose and does not understand. <em>"The AI Mirror," 2024.</em></span></span> &mdash; AI optimizes objectives it did not choose</td>
+</tr>
+<tr>
+  <td data-label="Requirement"><strong>Judgment</strong></td>
+  <td data-label="Meaning">Knowing what matters, weighing considerations</td>
+  <td data-label="AI lacks it">Smith &mdash; reckoning (pattern-matching), not judgment (caring about the outcome)</td>
+</tr>
+<tr>
+  <td data-label="Requirement"><strong>Stakes</strong></td>
+  <td data-label="Meaning">Having something to lose, being affected by outcomes</td>
+  <td data-label="AI lacks it"><span class="ref">Bryson (2022&ndash;2025)<span class="ref-popover">AI systems are artifacts, not moral patients. They have no skin in the game &mdash; equally fluent whether right, wrong, or fabricating. The tool has no stake in the outcome of its output. <em>Hertie School, ongoing.</em></span></span> &mdash; AI has no skin in the game</td>
+</tr>
+<tr>
+  <td data-label="Requirement"><strong>Communicative intent</strong></td>
+  <td data-label="Meaning">Meaning what you say, aiming to be understood</td>
+  <td data-label="AI lacks it">Bender &amp; Hanna &mdash; machine-produced text is text <em>no one meant</em></td>
+</tr>
+</tbody>
+</table>
+
+<p>This isn&rsquo;t a technicality. The tool has no judgment to delegate <em>to</em>. When you hand it a task without specifying what good looks like, it fills the gap with statistical plausibility &mdash; the most average-looking answer, not the best one. Your agency is the only judgment in the system.</p>
+
+<hr class="separator">
+
+<!-- Enchanted Determinism -->
+<h3 id="enchanted-determinism">Enchanted Determinism &mdash; The Double Illusion</h3>
+
+<p><span class="ref">Kate Crawford &mdash; &ldquo;Enchanted Determinism&rdquo; (2020)<span class="ref-popover">Crawford identified that AI gets treated as two contradictory things at once: magical (creative, autonomous, intelligent) and deterministic (reliable, unbiased, authoritative). Together, the two illusions produce a system that appears to act independently (so nobody asks who's behind it) and reliably (so nobody checks the output). Applied in "Calculating Empires," 2024&ndash;2025.</span></span> identified that AI gets treated as two contradictory things at once:</p>
+
+<div class="ed-container">
+  <div class="ed-half ed-enchant">
+    <div class="ed-label" style="color:var(--enchant-color)">The Enchantment Illusion</div>
+    <h4>&ldquo;The AI came up with this&rdquo;</h4>
+    <p><strong>Says:</strong> It&rsquo;s creative, autonomous, intelligent</p>
+    <p><strong>Hides:</strong> Someone chose the training data, objective function, deployment context</p>
+    <p><strong>Effect:</strong> You stop asking <em>whose decisions</em> produced this output</p>
+  </div>
+  <div class="ed-half ed-determ">
+    <div class="ed-label" style="color:var(--determ-color)">The Determinism Illusion</div>
+    <h4>&ldquo;The AI is reliable&rdquo;</h4>
+    <p><strong>Says:</strong> It&rsquo;s precise, data-driven, authoritative</p>
+    <p><strong>Hides:</strong> Training data biases, optimization direction, deployment interests</p>
+    <p><strong>Effect:</strong> You stop verifying. You treat output as ground truth.</p>
+  </div>
+</div>
+
+<p>Together: a system that appears to act independently (so nobody asks who&rsquo;s behind it) and reliably (so nobody checks the output). This is how agency evaporates &mdash; not because someone took it, but because the interface made it feel unnecessary.</p>
+
+<p><strong>The practical move:</strong> every time you interact with AI, both illusions are operating. The enchantment tempts you to stop asking &ldquo;whose choices shaped this?&rdquo; The determinism tempts you to stop asking &ldquo;should I verify this?&rdquo; Resisting both means maintaining your role as the agent &mdash; the one with intention, judgment, and stakes.</p>
+
+<hr class="separator">
+
+<!-- Self-Reinforcing Loop -->
+<h3 id="loop">The Self-Reinforcing Loop</h3>
+
+<p>The four parts reinforce each other. Seeing AI as a mind (Part 1) makes you miss that multiplication runs in multiple directions (Part 2), which makes it easy to stop steering (Part 3) &mdash; which sends you back to the comfortable illusion that the mind is handling it. Play (Part 4) is the operational response: it breaks the enchantment, maps the frontier, and exercises agency simultaneously.</p>
+
+<div class="viz-container">
+  <div id="loop-viz"></div>
+</div>
+
+<p>Breaking the loop at any point helps. Seeing the library clearly (Part 1) makes you ask what&rsquo;s being multiplied (Part 2). Mapping the multiplication makes you realize <em>you</em> have to aim it (Part 3). And Part 4 shows you how: through play &mdash; the structured experimentation that breaks all three traps at once.</p>
+
+<p class="closing">The library is vast. The multiplier is powerful. But the only judgment in the system is yours.</p>
+
+</section>
+
+<!-- PART 4 -->
+<section class="part" id="part4">
+<div class="section-label">Part 4</div>
+<h2>The Playground</h2>
+
+<div class="claim">
+  <div class="claim-label">The Claim</div>
+  Because AI&rsquo;s capability frontier is jagged and invisible, you cannot learn to use it from instruction. The epistemically correct approach is play &mdash; structured, reflective experimentation where you probe the tool, observe what happens, and adjust. This is not a soft suggestion. It is the only strategy that matches the actual nature of the problem.
+</div>
+
+<!-- Why Instruction Fails -->
+<h3 id="why-instruction-fails">Why Instruction Fails</h3>
+
+<p>There is an obvious-seeming answer to &ldquo;how do I learn to use AI well?&rdquo; &mdash; take a course, read best practices, follow a guide. The answer is wrong, and the reason it&rsquo;s wrong is a distinction between two types of problems that most people collapse into one.</p>
+
+<div class="domain-split">
+  <div class="domain-half domain-complicated">
+    <div class="domain-label" style="color:var(--text-muted)">Complicated</div>
+    <h4>Hard but knowable</h4>
+    <ul>
+      <li><strong>Nature:</strong> Has right answers that experts can find</li>
+      <li><strong>Examples:</strong> An engine, a tax return, a surgery</li>
+      <li><strong>Strategy:</strong> Analyze &rarr; Plan &rarr; Execute</li>
+      <li><strong>Expertise gives you:</strong> The ability to find the right answer faster</li>
+      <li><strong>What fails:</strong> Winging it. Random exploration without structure.</li>
+    </ul>
+  </div>
+  <div class="domain-half domain-complex">
+    <div class="domain-label" style="color:var(--accent)">Complex</div>
+    <h4>Unknowable in advance</h4>
+    <ul>
+      <li><strong>Nature:</strong> Cause and effect only visible in retrospect</li>
+      <li><strong>Examples:</strong> A market, a culture shift, a new technology&rsquo;s effects</li>
+      <li><strong>Strategy:</strong> <span class="term">Probe &rarr; Sense &rarr; Respond<span class="term-tip">The correct strategy for complex domains in Snowden&rsquo;s Cynefin framework. Try something small, observe what happens, adapt. Contrast with the complicated-domain strategy of Analyze &rarr; Plan &rarr; Execute.</span></span></li>
+      <li><strong>Expertise gives you:</strong> Better probes and better interpretation &mdash; but not certainty</li>
+      <li><strong>What fails:</strong> Best practices. Instruction manuals. Stable rules.</li>
+    </ul>
+  </div>
+</div>
+
+<p><span class="ref">Snowden &amp; Boone &mdash; &ldquo;A Leader&rsquo;s Framework for Decision Making&rdquo; (HBR, 2007)<span class="ref-popover">This distinction comes from Snowden&rsquo;s Cynefin framework, which classifies decision environments into domains: simple, complicated, complex, and chaotic. The crucial boundary is between complicated and complex. In complicated domains, the relationship between cause and effect is knowable &mdash; you just need expertise to see it. In complex domains, the relationship only becomes visible after the fact, and the system shifts as you interact with it. The correct strategy for complex domains is probe, sense, respond. <em>Harvard Business Review, 2007.</em></span></span> The <span class="term">Cynefin framework<span class="term-tip">A sense-making framework developed by Dave Snowden that classifies decision environments into simple, complicated, complex, and chaotic domains. Each domain requires a different strategy. The crucial insight: applying a complicated-domain strategy to a complex-domain problem produces false confidence.</span></span> classifies decision environments into domains. The crucial boundary is between complicated and complex. In complicated domains, cause and effect is knowable &mdash; you just need expertise. In complex domains, the relationship only becomes visible after the fact, and the system shifts as you interact with it.</p>
+
+<p>AI sits in the <span class="term">complex domain<span class="term-tip">A domain where cause and effect are only visible in retrospect and the system shifts as you interact with it. AI qualifies because its capability frontier is jagged, shifts across model versions and tasks, and cannot be mapped from theory.</span></span> because of the jagged frontier (Part 2). The frontier doesn&rsquo;t follow human categories of difficulty. It shifts across model versions, across tasks, across domains. A task AI handled perfectly last month may fail after an update. You cannot map this from theory. You can only map it by probing.</p>
+
+<p>Instruction &mdash; courses, best practices, prompting guides &mdash; is a complicated-domain strategy. It assumes stable answers that can be taught. <span class="ref">Narayanan &amp; Kapoor &mdash; <em>AI Snake Oil</em> (2024)<span class="ref-popover">Found that prompt engineering expertise is largely non-reproducible &mdash; techniques that work for one person on one task don&rsquo;t generalize. This is not because the advice is bad. It is because the domain is complex, and complicated-domain strategies applied to complex-domain problems produce false confidence. <em>Princeton UP, 2024.</em></span></span> found that prompt engineering expertise is largely non-reproducible &mdash; techniques that work for one person on one task don&rsquo;t generalize. This is not because the advice is bad. It is because the domain is complex.</p>
+
+<p><span class="ref">Zamfirescu-Pereira et al. (CHI, 2023)<span class="ref-popover">Studied how non-experts actually learn to prompt AI. They don&rsquo;t learn from documentation. They learn through trial and error &mdash; trying things, failing, adjusting. The researchers found this was not a limitation to be fixed but an effective learning strategy for an unpredictable tool. The users who tinkered outperformed the users who tried to follow rules. <em>ACM CHI, 2023.</em></span></span> studied how non-experts actually learn to prompt AI. They don&rsquo;t learn from documentation. They learn through trial and error. The users who tinkered outperformed the users who tried to follow rules.</p>
+
+<p>The implication is not &ldquo;instruction is useless.&rdquo; It&rsquo;s that instruction is <em>insufficient</em>. You can teach the complicated parts &mdash; what a prompt is, what temperature does. But the complex part &mdash; where AI actually helps <em>your</em> work, where it fails, where it flatters you into thinking it helped when it didn&rsquo;t &mdash; that can only be discovered through direct, iterative contact with the tool. Through play.</p>
+
+<hr class="separator">
+
+<!-- What Play Is -->
+<h3 id="what-play-is">What Play Is Here</h3>
+
+<p>Play, in this context, is not recreation and not games. It is a specific cognitive mode with properties that make it suited to complex domains. Four concepts define what we mean.</p>
+
+<div class="play-concept">
+  <h4>Experimentation without full consequences</h4>
+  <p>There is a space between full reality and pure fantasy &mdash; a zone where you can test things and getting it wrong doesn&rsquo;t cost much, but the results are real enough to learn from. <span class="ref">Winnicott &mdash; <em>Playing and Reality</em> (1971)<span class="ref-popover">Winnicott called this the &ldquo;transitional space&rdquo; &mdash; the zone between full reality and pure fantasy where experimentation happens without full consequences. A child playing &ldquo;house&rdquo; is not confused about whether they&rsquo;re actually a parent. They&rsquo;re testing roles, behaviors, and rules where failure is information, not disaster. <em>Tavistock, 1971.</em></span></span> called this the <span class="term">transitional space<span class="term-tip">Winnicott&rsquo;s concept: the zone between full reality and pure fantasy where experimentation happens safely. Failure is information, not disaster. Applied to AI: you try a prompt, evaluate the output, adjust &mdash; in a space where a bad result teaches you about the frontier rather than costing you a deadline.</span></span>. This is precisely what productive AI engagement looks like: you try a prompt, evaluate the output, adjust your approach &mdash; in a space where a bad result teaches you something about the frontier rather than costing you a deadline.</p>
+</div>
+
+<div class="play-concept">
+  <h4>The maker-material dialogue</h4>
+  <p>Skilled work develops through a dialogue between maker and material. The woodworker cuts, the wood responds &mdash; splits, resists, bends unexpectedly &mdash; the woodworker adjusts. <span class="ref">Sennett &mdash; <em>The Craftsman</em> (2008)<span class="ref-popover">Traces this dynamic across centuries of craft practice. Skill doesn&rsquo;t come from reading about wood. It comes from working with it and attending to what happens. The craftsman is not a passive recipient of the material&rsquo;s properties. They actively explore, test, and shape. AI engagement follows the same structure: you prompt, the tool responds (sometimes well, sometimes badly, sometimes unexpectedly), you evaluate and adjust. <em>Yale UP, 2008.</em></span></span> traces this across centuries of craft practice. AI engagement follows the same structure: you prompt, the tool responds (sometimes well, sometimes badly, sometimes in ways you didn&rsquo;t expect), you evaluate and adjust. Each cycle teaches you something about the material that no manual could convey.</p>
+</div>
+
+<div class="play-concept">
+  <h4>Agency through mastery experiences</h4>
+  <p>People develop agency &mdash; the belief that their actions can produce desired outcomes &mdash; through four sources, and they are not equally powerful.</p>
+
+  <p><span class="ref">Bandura &mdash; <em>Self-Efficacy: The Exercise of Control</em> (1997)<span class="ref-popover">Bandura identified four sources of self-efficacy, listed in order of strength: (1) mastery experiences &mdash; actually succeeding at something challenging, (2) vicarious experience &mdash; watching someone else succeed, (3) verbal persuasion &mdash; being told you can do it, (4) physiological states &mdash; how confident or anxious you feel. The strongest source by a wide margin is doing it yourself. <em>W.H. Freeman, 1997.</em></span></span></p>
+
+  <table class="styled-table responsive">
+  <thead><tr><th>Source</th><th>What it is</th><th>Strength</th><th>AI equivalent</th></tr></thead>
+  <tbody>
+  <tr>
+    <td data-label="Source"><strong><span class="term">Mastery experiences<span class="term-tip">The strongest source of self-efficacy according to Bandura. Actually doing something challenging and succeeding. Each cycle of prompt &rarr; evaluate &rarr; adjust where you get a result you intentionally produced is a mastery experience.</span></span></strong></td>
+    <td data-label="What it is">Actually doing something challenging and succeeding</td>
+    <td data-label="Strength"><strong>Strongest</strong></td>
+    <td data-label="AI equivalent">Each cycle of prompt &rarr; evaluate &rarr; adjust where you get a result you produced</td>
+  </tr>
+  <tr>
+    <td data-label="Source"><strong>Vicarious experience</strong></td>
+    <td data-label="What it is">Watching someone else succeed</td>
+    <td data-label="Strength">Moderate</td>
+    <td data-label="AI equivalent">Watching a demo, reading someone&rsquo;s AI workflow</td>
+  </tr>
+  <tr>
+    <td data-label="Source"><strong>Verbal persuasion</strong></td>
+    <td data-label="What it is">Being told you can do it</td>
+    <td data-label="Strength">Weakest</td>
+    <td data-label="AI equivalent">A course telling you &ldquo;AI can help with your work&rdquo;</td>
+  </tr>
+  <tr>
+    <td data-label="Source"><strong>Physiological states</strong></td>
+    <td data-label="What it is">How you feel &mdash; confidence, anxiety</td>
+    <td data-label="Strength">Variable</td>
+    <td data-label="AI equivalent">The enchantment (false confidence) or the intimidation (avoidance)</td>
+  </tr>
+  </tbody>
+  </table>
+
+  <p>This is why play matters for agency specifically. Each cycle of prompt-evaluate-adjust is a <span class="term">mastery experience<span class="term-tip">The strongest source of self-efficacy according to Bandura. Actually doing something challenging and succeeding. Each cycle of prompt &rarr; evaluate &rarr; adjust where you get a result you intentionally produced is a mastery experience.</span></span> &mdash; the strongest source. When it works, you&rsquo;ve mapped a piece of the frontier and built confidence grounded in evidence. When it fails, you&rsquo;ve also mapped the frontier &mdash; and your confidence is calibrated rather than inflated. The Self-Automator mode (Part 2) skips this cycle entirely. No mastery experience occurs. No agency develops.</p>
+</div>
+
+<div class="play-concept">
+  <h4>Calibration through failure</h4>
+  <p>When a child&rsquo;s expectation collides with reality &mdash; they think the block tower will stand, it falls &mdash; play is the mode in which they process the discrepancy. <span class="ref">Piaget &mdash; <em>Play, Dreams and Imitation in Childhood</em> (1962)<span class="ref-popover">Piaget identified play as the mechanism through which children calibrate their understanding of the world. When expectations collide with reality, play provides the mode for processing the discrepancy productively &mdash; rebuilding, testing, adjusting the mental model. Applied to AI: every discrepancy between what you expected and what the tool produced is a data point about the frontier. <em>Norton, 1962.</em></span></span> identified this as the mechanism through which children calibrate their understanding of the world. Applied to AI: every discrepancy between what you expected and what the tool produced is a data point about the frontier. Play is how you collect those data points without being crushed by them.</p>
+</div>
+
+<hr class="separator">
+
+<!-- Three Modes -->
+<h3 id="three-modes-play">Three Modes of Play With AI</h3>
+
+<p>The BCG consultant data (Part 2) maps cleanly onto play modes when read through this lens:</p>
+
+<table class="styled-table responsive">
+<thead><tr><th>Mode</th><th>What it looks like</th><th>Play character</th><th>What develops</th><th>What doesn&rsquo;t</th></tr></thead>
+<tbody>
+<tr>
+  <td data-label="Mode"><strong>Cyborg</strong><br><span style="font-size:0.8em;color:var(--text-muted)">~60% of BCG users</span></td>
+  <td data-label="What it looks like">Continuous back-and-forth, weaving human and AI work, evaluating each output</td>
+  <td data-label="Play character">Full play cycle: <span class="term">probe-sense-respond<span class="term-tip">The Cynefin framework&rsquo;s recommended strategy for complex domains. Try something small (probe), observe what happens (sense), adapt your approach (respond). Repeated cycles build a personal map of the jagged frontier.</span></span>, repeat. The craftsman&rsquo;s dialogue.</td>
+  <td data-label="What develops">AI skills <em>and</em> domain skills. Frontier mapping. Agency through mastery experiences.</td>
+  <td data-label="What doesn't">&mdash;</td>
+</tr>
+<tr>
+  <td data-label="Mode"><strong>Self-Automator</strong><br><span style="font-size:0.8em;color:var(--text-muted)">~27%</span></td>
+  <td data-label="What it looks like">Hand off entire task, accept output, submit</td>
+  <td data-label="Play character">No play. Delegation without engagement. The transitional space collapses.</td>
+  <td data-label="What develops">Neither AI skills nor domain skills. Confidence without calibration.</td>
+  <td data-label="What doesn't">Everything. This is the abdication failure from Part 3.</td>
+</tr>
+<tr>
+  <td data-label="Mode"><strong><span class="term">Vibe Coder<span class="term-tip">Term coined by Andrej Karpathy in February 2025 for writing software by describing what you want to AI and accepting the code that works without fully understanding it. Captures playful experimentation but strips out judgment &mdash; play without evaluation.</span></span></strong><br><span style="font-size:0.8em;color:var(--text-muted)">emerging pattern</span></td>
+  <td data-label="What it looks like">Rapid generation, accept what works, discard what doesn&rsquo;t, don&rsquo;t examine why</td>
+  <td data-label="Play character">Play <em>without</em> judgment. Exploratory but not evaluative.</td>
+  <td data-label="What develops">Speed. Volume. The feeling of productivity.</td>
+  <td data-label="What doesn't">Quality assessment. Frontier mapping. Understanding of <em>why</em> something worked.</td>
+</tr>
+</tbody>
+</table>
+
+<p>The <span class="term">vibe coding<span class="term-tip">A term coined by Andrej Karpathy (February 2025) for writing software by describing what you want to AI and accepting the code that works without fully understanding it. Data suggests 10&ndash;100x creation speed but 0.4&ndash;0.6x quality.</span></span> phenomenon is the interesting middle case. <span class="ref">Karpathy (2025)<span class="ref-popover">Coined &ldquo;vibe coding&rdquo; in February 2025 to describe writing software by describing what you want to AI and accepting the code that works without fully understanding it. Captures something real about playful AI engagement &mdash; the willingness to experiment, the rapid iteration, the comfort with not controlling every detail. Data from practice suggests 10&ndash;100x creation speed but 0.4&ndash;0.6x quality.</span></span> coined it to describe writing software by describing what you want to AI and accepting the code that works without fully understanding it. It captures the willingness to experiment &mdash; but strips out judgment. The vibe coder plays in the transitional space but never evaluates what the space produces. This is play that maps the frontier&rsquo;s <em>inside</em> without mapping its <em>outside</em>. It reinforces the enchantment rather than breaking it.</p>
+
+<p>Productive play requires the full cycle: probe, evaluate, adjust. Drop the evaluation and you get the Self-Automator with better aesthetics. Drop the probing and you get instruction-following. The cycle is what makes it work.</p>
+
+<hr class="separator">
+
+<!-- Play Solves All Three Problems -->
+<h3 id="play-solves">Play Solves All Three Problems</h3>
+
+<p>This is not a disconnected fourth section. Play is the operational response to everything in Parts 1 through 3.</p>
+
+<div class="play-solves-grid">
+  <div class="play-solves-card" style="border-top-color: var(--enchant-color);">
+    <div class="ps-problem">Part 1 &mdash; The Enchantment</div>
+    <div class="ps-title">The talking library triggers mind-attribution, producing overtrust</div>
+    <div class="ps-how">Play forces encounters with failure. You see the tool get things wrong, produce nonsense, miss the point. Each failure is a calibration event that erodes the enchantment experientially &mdash; not because someone told you the tool has limits, but because you watched it fail.</div>
+    <div class="ps-mechanism">Mechanism: calibration through failure &mdash; expectation-reality discrepancy, processed through iterative testing</div>
+  </div>
+  <div class="play-solves-card" style="border-top-color: var(--determ-color);">
+    <div class="ps-problem">Part 2 &mdash; The Invisible Frontier</div>
+    <div class="ps-title">AI multiplies and divides along jagged, unpredictable lines that theory can&rsquo;t map</div>
+    <div class="ps-how">Play <em>is</em> frontier mapping. Each probe tests a boundary. Over repeated cycles, you build a personal map of where AI helps and where it hurts <em>for your specific work</em>. No course can give you this map because the frontier is domain-specific, task-specific, and model-version-specific.</div>
+    <div class="ps-mechanism">Mechanism: probe-sense-respond &mdash; the only strategy that works in complex domains</div>
+  </div>
+  <div class="play-solves-card" style="border-top-color: var(--divide-color);">
+    <div class="ps-problem">Part 3 &mdash; Agency Abdication</div>
+    <div class="ps-title">Treating AI as if it has its own judgment, failing to structure your own</div>
+    <div class="ps-how">Each play cycle is a mastery experience &mdash; you set the intention, you evaluate the result, you decide what to do next. Agency develops through this repeated exercise, not through being told to &ldquo;stay in the loop.&rdquo;</div>
+    <div class="ps-mechanism">Mechanism: mastery experiences &mdash; agency builds through successful cycles of intention-action-evaluation</div>
+  </div>
+</div>
+
+<p>No other mode does all three simultaneously. Instruction can explain the enchantment but cannot break it experientially. Best practices can describe the frontier but cannot map it for your specific work. Rules can mandate human oversight but cannot build the judgment that makes oversight meaningful.</p>
+
+<hr class="separator">
+
+<!-- Why Organizations Resist -->
+<h3 id="why-orgs-resist">Why Organizations Resist (And Why This Matters)</h3>
+
+<p>If play is the correct strategy, why doesn&rsquo;t everyone just do it? Because organizations are structurally biased against the kind of activity play represents.</p>
+
+<p>Organizations systematically under-explore. <span class="ref">March &mdash; &ldquo;Exploration and Exploitation in Organizational Learning&rdquo; (1991)<span class="ref-popover">The classic paper on exploration vs. exploitation. Exploitation &mdash; refining what you already know &mdash; produces faster, more certain, more proximate returns. Exploration &mdash; trying new things to discover what you don&rsquo;t know &mdash; produces uncertain, delayed returns that accrue broadly rather than to any specific project. Managers see exploration as waste because its value is hard to measure and hard to attribute. <em>Organization Science, 1991.</em></span></span> showed that exploitation &mdash; refining what you already know &mdash; produces faster, more certain returns. Exploration &mdash; trying new things &mdash; produces uncertain, delayed returns that accrue broadly rather than to any specific project. &ldquo;Playing with AI&rdquo; is exploration. It looks like wasting time because its returns are uncertain, spread across future tasks, and invisible in this quarter&rsquo;s metrics.</p>
+
+<p>And exploration only happens when people feel safe enough to fail. <span class="ref">Edmondson &mdash; <em>The Fearless Organization</em> (2019)<span class="ref-popover">Demonstrated that experimentation and exploratory learning happen only in environments with psychological safety &mdash; where people can try things, fail, and discuss failure without penalty. If &ldquo;I played with the AI for two hours and discovered it can&rsquo;t actually do what we thought&rdquo; is treated as wasted time rather than valuable frontier-mapping, people stop exploring. <em>Wiley, 2019. Based on her 1999 paper in Administrative Science Quarterly.</em></span></span> demonstrated that experimentation and exploratory learning happen only in environments with <span class="term">psychological safety<span class="term-tip">Amy Edmondson&rsquo;s concept: a shared belief that the team is safe for interpersonal risk-taking. People can try things, fail, and discuss failure without penalty. Without it, exploration stops and people revert to either avoidance or uncritical adoption.</span></span> &mdash; where people can try things, fail, and discuss failure without penalty. If &ldquo;I played with the AI for two hours and discovered it can&rsquo;t actually do what we thought&rdquo; is treated as wasted time rather than valuable frontier-mapping, people stop exploring.</p>
+
+<p>This resistance isn&rsquo;t irrational. <span class="ref">Christensen &mdash; <em>The Innovator&rsquo;s Dilemma</em> (1997)<span class="ref-popover">Established organizations resist disruptive technologies because they don&rsquo;t fit existing performance metrics. AI play doesn&rsquo;t produce outputs that fit in quarterly reviews or project timelines. The learning it generates &mdash; &ldquo;I now know where AI helps and hurts for tasks like mine&rdquo; &mdash; is invisible to management systems designed to track deliverables. <em>Harvard Business School Press, 1997.</em></span></span> showed that established organizations resist disruptive technologies because they don&rsquo;t fit existing performance metrics. AI play doesn&rsquo;t produce outputs that fit in quarterly reviews or project timelines. The learning it generates is invisible to management systems designed to track deliverables.</p>
+
+<p>The people who will discover what AI can actually do for an organization are the ones who experiment beyond its intended use. <span class="ref">Von Hippel &mdash; <em>Democratizing Innovation</em> (2005)<span class="ref-popover">Von Hippel calls them &ldquo;lead users&rdquo; &mdash; users who face needs ahead of the general market and who innovate by tinkering with tools beyond their intended use. Organizations that prevent this experimentation lose the innovation benefits. But tinkerers need permission, time, and safety to tinker. <em>MIT Press, 2005.</em></span></span> calls them <span class="term">lead users<span class="term-tip">Eric von Hippel&rsquo;s term for users who face needs ahead of the general market and who innovate by tinkering with tools beyond their intended use. They&rsquo;re the ones who discover what a technology can actually do &mdash; but they need permission, time, and safety to experiment.</span></span>. Organizations that prevent this experimentation lose the innovation benefits. But tinkerers need permission, time, and safety to tinker.</p>
+
+<p>The practical implication connects back to Part 2&rsquo;s dynamo parallel: if your organization wants to move from Phase 1 (infrastructure substitution &mdash; dropping the new technology where the old one was) to Phase 2 (organizational redesign around what the technology actually does well), it needs people who have mapped the frontier. Those people can only exist if they were allowed to play. Skipping the playground means staying in Phase 1 permanently &mdash; the dynamo where the steam engine was.</p>
+
+<p class="closing">The library is vast. The multiplier is powerful. The only judgment in the system is yours. Now go play with it.</p>
+
+</section>
+
+</div>
+</main>
+
+<script>
+// ─── Theme Toggle ───
+(function() {
+  var themeBtn = document.querySelector('.theme-toggle');
+  themeBtn.addEventListener('click', function() {
+    document.body.classList.toggle('dark');
+    renderAxesChart();
+    renderFrontierChart();
+    renderLoopViz();
+  });
+
+  // Auto-detect
+  if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    document.body.classList.add('dark');
+  }
+})();
+
+// ─── TOC ───
+(function() {
+  var overlay = document.getElementById('toc-overlay');
+  var tocBtn = document.querySelector('.toc-toggle');
+  var tocItems = overlay.querySelectorAll('.toc-item');
+
+  tocBtn.addEventListener('click', function() {
+    overlay.classList.toggle('open');
+  });
+
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+
+  for (var i = 0; i < tocItems.length; i++) {
+    tocItems[i].addEventListener('click', function() {
+      overlay.classList.remove('open');
+    });
+  }
+})();
+
+// ─── Navigation scroll tracking ───
+(function() {
+  var parts = document.querySelectorAll('.part');
+  var navLinks = document.querySelectorAll('.nav-link');
+
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        navLinks.forEach(function(l) { l.classList.remove('active'); });
+        var link = document.querySelector('.nav-link[data-part="' + entry.target.id + '"]');
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  parts.forEach(function(p) { observer.observe(p); });
+})();
+
+// ─── Mobile Tooltip Handling ───
+(function() {
+  var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  if (!isTouch) return;
+
+  var allRefs = document.querySelectorAll('.ref, .term');
+  for (var i = 0; i < allRefs.length; i++) {
+    allRefs[i].addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      // Close all
+      var allPops = document.querySelectorAll('.ref-popover.show, .term-tip.show');
+      for (var j = 0; j < allPops.length; j++) allPops[j].classList.remove('show');
+      var pop = this.querySelector('.ref-popover, .term-tip');
+      if (pop) {
+        pop.classList.add('show');
+        positionPopover(pop, this);
+      }
+    });
+  }
+
+  document.addEventListener('click', function() {
+    var allPops = document.querySelectorAll('.ref-popover.show, .term-tip.show');
+    for (var j = 0; j < allPops.length; j++) allPops[j].classList.remove('show');
+  });
+
+  function positionPopover(pop, parent) {
+    pop.classList.remove('flip-left', 'flip-right', 'flip-down');
+    var rect = parent.getBoundingClientRect();
+    var popW = 340;
+    if (rect.top < 200) pop.classList.add('flip-down');
+    if (rect.left < popW / 2) pop.classList.add('flip-left');
+    else if (window.innerWidth - rect.right < popW / 2) pop.classList.add('flip-right');
+  }
+})();
+
+// ─── D3 Visualizations ───
+function getCSS(prop) {
+  return getComputedStyle(document.body).getPropertyValue(prop).trim();
+}
+
+// ── 1. Five Axes Diverging Chart ──
+function renderAxesChart() {
+  var container = document.getElementById('axes-chart');
+  while (container.firstChild) container.removeChild(container.firstChild);
+
+  var w = Math.min(container.clientWidth || 660, 660);
+  var h = 300;
+  var mid = w / 2;
+
+  var data = [
+    { axis: 'Volume / Quality', mVal: 0.98, dVal: 0.4, mLabel: '+98% PRs merged', dLabel: '+9% bug rate' },
+    { axis: 'Novice / Expert', mVal: 0.85, dVal: 0.6, mLabel: 'Novice +34%', dLabel: 'Expert -19%' },
+    { axis: 'Short-term / Long-term', mVal: 0.75, dVal: 0.5, mLabel: 'Performance +30%', dLabel: 'Memory decline' },
+    { axis: 'Individual / Organization', mVal: 0.55, dVal: 0.8, mLabel: 'Individual +14%', dLabel: 'Org: 90% no impact' },
+    { axis: 'Inside / Outside frontier', mVal: 0.9, dVal: 0.6, mLabel: '+40% quality', dLabel: '-19% performance' },
+  ];
+
+  var rowH = (h - 40) / data.length;
+  var barMaxW = mid - 80;
+
+  var svg = d3.select(container).append('svg')
+    .attr('width', w).attr('height', h)
+    .attr('viewBox', '0 0 ' + w + ' ' + h);
+
+  var multColor = getCSS('--multiply-color');
+  var divColor = getCSS('--divide-color');
+  var textColor = getCSS('--viz-text');
+  var gridColor = getCSS('--viz-grid');
+
+  svg.append('line')
+    .attr('x1', mid).attr('x2', mid)
+    .attr('y1', 20).attr('y2', h - 20)
+    .attr('stroke', gridColor).attr('stroke-width', 1);
+
+  data.forEach(function(d, i) {
+    var y = 20 + i * rowH + rowH / 2;
+
+    svg.append('rect')
+      .attr('x', mid + 2).attr('y', y - 12)
+      .attr('width', 0).attr('height', 24)
+      .attr('rx', 4).attr('fill', multColor).attr('opacity', 0.8)
+      .transition().duration(800).delay(i * 100)
+      .attr('width', d.mVal * barMaxW);
+
+    svg.append('rect')
+      .attr('x', mid - 2).attr('y', y - 12)
+      .attr('width', 0).attr('height', 24)
+      .attr('rx', 4).attr('fill', divColor).attr('opacity', 0.8)
+      .transition().duration(800).delay(i * 100)
+      .attr('x', mid - 2 - d.dVal * barMaxW)
+      .attr('width', d.dVal * barMaxW);
+
+    svg.append('text')
+      .attr('x', mid + d.mVal * barMaxW + 8).attr('y', y + 4)
+      .attr('font-size', '10px').attr('fill', textColor)
+      .text(d.mLabel);
+
+    svg.append('text')
+      .attr('x', mid - d.dVal * barMaxW - 8).attr('y', y + 4)
+      .attr('text-anchor', 'end')
+      .attr('font-size', '10px').attr('fill', textColor)
+      .text(d.dLabel);
+
+    svg.append('text')
+      .attr('x', mid).attr('y', y - 18)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '10px').attr('font-weight', '600').attr('fill', textColor)
+      .text(d.axis);
+  });
+
+  svg.append('circle').attr('cx', mid - 60).attr('cy', h - 6).attr('r', 4).attr('fill', multColor);
+  svg.append('text').attr('x', mid - 52).attr('y', h - 2).attr('font-size', '10px').attr('fill', textColor).text('Multiplies');
+  svg.append('circle').attr('cx', mid + 20).attr('cy', h - 6).attr('r', 4).attr('fill', divColor);
+  svg.append('text').attr('x', mid + 28).attr('y', h - 2).attr('font-size', '10px').attr('fill', textColor).text('Divides');
+}
+
+// ── 2. Jagged Frontier ──
+function renderFrontierChart() {
+  var container = document.getElementById('frontier-chart');
+  while (container.firstChild) container.removeChild(container.firstChild);
+
+  var size = Math.min(container.clientWidth || 660, 660);
+  var w = size, h = size * 0.95;
+  var cx = w / 2, cy = h / 2;
+  var maxR = Math.min(w, h) / 2 - 90;
+
+  var svg = d3.select(container).append('svg')
+    .attr('width', w).attr('height', h)
+    .attr('viewBox', '0 0 ' + w + ' ' + h);
+
+  var accentColor = getCSS('--accent');
+  var divColor = getCSS('--divide-color');
+  var textColor = getCSS('--viz-text');
+  var gridColor = getCSS('--viz-grid');
+  var bgColor = getCSS('--viz-bg');
+
+  // Data: occupational categories with theoretical and observed AI coverage
+  var categories = [
+    { label: 'Management',                theoretical: 0.97, observed: 0.32 },
+    { label: 'Business & finance',        theoretical: 0.72, observed: 0.25 },
+    { label: 'Computer & math',           theoretical: 0.88, observed: 0.38 },
+    { label: 'Architecture & engineering', theoretical: 0.65, observed: 0.18 },
+    { label: 'Life & social sciences',    theoretical: 0.58, observed: 0.22 },
+    { label: 'Social services',           theoretical: 0.28, observed: 0.12 },
+    { label: 'Legal',                     theoretical: 0.38, observed: 0.20 },
+    { label: 'Education & library',       theoretical: 0.48, observed: 0.15 },
+    { label: 'Arts & media',              theoretical: 0.68, observed: 0.18 },
+    { label: 'Healthcare practitioners',  theoretical: 0.38, observed: 0.10 },
+    { label: 'Healthcare support',        theoretical: 0.25, observed: 0.08 },
+    { label: 'Protective service',        theoretical: 0.18, observed: 0.07 },
+    { label: 'Food & serving',            theoretical: 0.12, observed: 0.04 },
+    { label: 'Grounds maintenance',       theoretical: 0.08, observed: 0.03 },
+    { label: 'Personal care',             theoretical: 0.13, observed: 0.05 },
+    { label: 'Sales',                     theoretical: 0.32, observed: 0.12 },
+    { label: 'Office & admin',            theoretical: 0.18, observed: 0.15 },
+    { label: 'Construction',              theoretical: 0.08, observed: 0.04 },
+    { label: 'Agriculture',               theoretical: 0.10, observed: 0.04 },
+    { label: 'Installation & repair',     theoretical: 0.14, observed: 0.05 },
+    { label: 'Production',                theoretical: 0.18, observed: 0.08 },
+    { label: 'Transportation',            theoretical: 0.22, observed: 0.10 },
+  ];
+
+  var n = categories.length;
+  var angleSlice = (2 * Math.PI) / n;
+
+  var g = svg.append('g').attr('transform', 'translate(' + cx + ',' + cy + ')');
+
+  // Concentric grid circles
+  var levels = [0.2, 0.4, 0.6, 0.8, 1.0];
+  levels.forEach(function(level) {
+    g.append('circle')
+      .attr('cx', 0).attr('cy', 0)
+      .attr('r', maxR * level)
+      .attr('fill', 'none')
+      .attr('stroke', gridColor)
+      .attr('stroke-width', 0.8)
+      .attr('stroke-opacity', 0.6);
+
+    // Scale labels on left side
+    g.append('text')
+      .attr('x', -8).attr('y', -maxR * level + 4)
+      .attr('text-anchor', 'end')
+      .attr('font-size', '9px').attr('fill', textColor).attr('opacity', 0.5)
+      .text(level.toFixed(1));
+  });
+
+  // Radial axis lines
+  categories.forEach(function(d, i) {
+    var angle = angleSlice * i - Math.PI / 2;
+    g.append('line')
+      .attr('x1', 0).attr('y1', 0)
+      .attr('x2', maxR * Math.cos(angle))
+      .attr('y2', maxR * Math.sin(angle))
+      .attr('stroke', gridColor)
+      .attr('stroke-width', 0.5)
+      .attr('stroke-opacity', 0.4);
+  });
+
+  // Helper: convert data to polygon points
+  function polygonPoints(key) {
+    return categories.map(function(d, i) {
+      var angle = angleSlice * i - Math.PI / 2;
+      var r = maxR * d[key];
+      return [r * Math.cos(angle), r * Math.sin(angle)];
+    });
+  }
+
+  function pathStr(pts) {
+    return 'M ' + pts.map(function(p) { return p[0] + ',' + p[1]; }).join(' L ') + ' Z';
+  }
+
+  // Theoretical coverage (large, jagged shape)
+  var theoreticalPts = polygonPoints('theoretical');
+  g.append('path')
+    .attr('d', pathStr(theoreticalPts))
+    .attr('fill', accentColor).attr('fill-opacity', 0.15)
+    .attr('stroke', accentColor).attr('stroke-width', 1.5)
+    .attr('stroke-opacity', 0.7);
+
+  // Theoretical dots
+  theoreticalPts.forEach(function(p) {
+    g.append('circle')
+      .attr('cx', p[0]).attr('cy', p[1])
+      .attr('r', 3)
+      .attr('fill', accentColor).attr('fill-opacity', 0.9);
+  });
+
+  // Observed coverage (small, inner shape)
+  var observedPts = polygonPoints('observed');
+  g.append('path')
+    .attr('d', pathStr(observedPts))
+    .attr('fill', divColor).attr('fill-opacity', 0.18)
+    .attr('stroke', divColor).attr('stroke-width', 1.5)
+    .attr('stroke-opacity', 0.7);
+
+  // Observed dots (squares)
+  observedPts.forEach(function(p) {
+    g.append('rect')
+      .attr('x', p[0] - 3).attr('y', p[1] - 3)
+      .attr('width', 6).attr('height', 6)
+      .attr('fill', divColor).attr('fill-opacity', 0.9);
+  });
+
+  // Category labels
+  categories.forEach(function(d, i) {
+    var angle = angleSlice * i - Math.PI / 2;
+    var labelR = maxR + 16;
+    var lx = labelR * Math.cos(angle);
+    var ly = labelR * Math.sin(angle);
+
+    // Determine text-anchor based on position
+    var anchor = 'middle';
+    if (Math.abs(Math.cos(angle)) > 0.15) {
+      anchor = Math.cos(angle) > 0 ? 'start' : 'end';
+    }
+
+    var label = g.append('text')
+      .attr('x', lx).attr('y', ly + 4)
+      .attr('text-anchor', anchor)
+      .attr('font-size', '10px').attr('fill', textColor)
+      .attr('opacity', 0.85);
+
+    // Handle long labels with line break
+    var words = d.label.split(' & ');
+    if (words.length > 1 && d.label.length > 14) {
+      label.text('');
+      label.append('tspan').attr('x', lx).attr('dy', '-0.35em').text(words[0] + ' &');
+      label.append('tspan').attr('x', lx).attr('dy', '1.15em').text(words[1]);
+    } else if (d.label.length > 16) {
+      var mid = d.label.lastIndexOf(' ', d.label.length / 2 + 4);
+      if (mid > 0) {
+        label.text('');
+        label.append('tspan').attr('x', lx).attr('dy', '-0.35em').text(d.label.slice(0, mid));
+        label.append('tspan').attr('x', lx).attr('dy', '1.15em').text(d.label.slice(mid + 1));
+      } else {
+        label.text(d.label);
+      }
+    } else {
+      label.text(d.label);
+    }
+  });
+
+  // Legend
+  var legendY = h / 2 + maxR + 55;
+  var legendX = cx;
+  var lg = svg.append('g').attr('transform', 'translate(' + (legendX - 80) + ',' + legendY + ')');
+
+  // Theoretical
+  lg.append('line').attr('x1', 0).attr('y1', 0).attr('x2', 18).attr('y2', 0)
+    .attr('stroke', accentColor).attr('stroke-width', 2);
+  lg.append('circle').attr('cx', 9).attr('cy', 0).attr('r', 3).attr('fill', accentColor);
+  lg.append('text').attr('x', 24).attr('y', 4)
+    .attr('font-size', '10px').attr('fill', textColor)
+    .text('Theoretical AI coverage');
+
+  // Observed
+  lg.append('line').attr('x1', 0).attr('y1', 20).attr('x2', 18).attr('y2', 20)
+    .attr('stroke', divColor).attr('stroke-width', 2);
+  lg.append('rect').attr('x', 6).attr('y', 17).attr('width', 6).attr('height', 6).attr('fill', divColor);
+  lg.append('text').attr('x', 24).attr('y', 24)
+    .attr('font-size', '10px').attr('fill', textColor)
+    .text('Observed AI coverage');
+}
+
+// ── 3. Self-Reinforcing Loop (with Part 4 breaking in) ──
+function renderLoopViz() {
+  var container = document.getElementById('loop-viz');
+  while (container.firstChild) container.removeChild(container.firstChild);
+
+  var w = Math.min(container.clientWidth || 440, 440);
+  var h = 380;
+  var cx = w / 2, cy = h / 2 - 10;
+  var r = Math.min(w, h) / 2 - 70;
+
+  var svg = d3.select(container).append('svg')
+    .attr('width', w).attr('height', h)
+    .attr('viewBox', '0 0 ' + w + ' ' + h);
+
+  var accent = getCSS('--accent');
+  var textColor = getCSS('--text');
+  var textSec = getCSS('--text-secondary');
+  var bgColor = getCSS('--viz-bg');
+  var multColor = getCSS('--multiply-color');
+
+  // The trap loop (3 nodes)
+  var loopNodes = [
+    { angle: -90, label: 'See AI as a mind', sub: '(Part 1: Talking Library)', color: getCSS('--enchant-color') },
+    { angle: 30, label: 'Miss the multiplication', sub: '(Part 2: Unmapped axes)', color: getCSS('--determ-color') },
+    { angle: 150, label: 'Stop steering', sub: '(Part 3: Agency abdicated)', color: getCSS('--divide-color') },
+  ];
+
+  // Draw loop arrows
+  loopNodes.forEach(function(node, i) {
+    var next = loopNodes[(i + 1) % 3];
+    var a1 = (node.angle + 22) * Math.PI / 180;
+    var a2 = (next.angle - 22) * Math.PI / 180;
+    if (next.angle < node.angle) a2 += 2 * Math.PI;
+    var x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+    var x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
+
+    var amid = (a1 + a2) / 2;
+    var cr = r * 0.6;
+    var cpx = cx + cr * Math.cos(amid);
+    var cpy = cy + cr * Math.sin(amid);
+
+    var id = 'arrow-' + i;
+    svg.append('defs').append('marker')
+      .attr('id', id)
+      .attr('viewBox', '0 0 10 10')
+      .attr('refX', 8).attr('refY', 5)
+      .attr('markerWidth', 6).attr('markerHeight', 6)
+      .attr('orient', 'auto')
+      .append('path')
+      .attr('d', 'M 0 0 L 10 5 L 0 10 Z')
+      .attr('fill', accent);
+
+    svg.append('path')
+      .attr('d', 'M ' + x1 + ' ' + y1 + ' Q ' + cpx + ' ' + cpy + ' ' + x2 + ' ' + y2)
+      .attr('fill', 'none')
+      .attr('stroke', accent)
+      .attr('stroke-width', 1.5)
+      .attr('stroke-opacity', 0.4)
+      .attr('marker-end', 'url(#' + id + ')');
+  });
+
+  // Draw loop nodes
+  loopNodes.forEach(function(node, i) {
+    var a = node.angle * Math.PI / 180;
+    var nx = cx + r * Math.cos(a);
+    var ny = cy + r * Math.sin(a);
+
+    svg.append('circle')
+      .attr('cx', nx).attr('cy', ny)
+      .attr('r', 28)
+      .attr('fill', bgColor)
+      .attr('stroke', node.color)
+      .attr('stroke-width', 2);
+
+    var labelY = node.angle === -90 ? ny - 40 : ny + 44;
+    svg.append('text')
+      .attr('x', nx).attr('y', labelY)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '12px').attr('font-weight', '600')
+      .attr('fill', textColor)
+      .text(node.label);
+
+    svg.append('text')
+      .attr('x', nx).attr('y', labelY + 16)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '10px')
+      .attr('fill', textSec)
+      .text(node.sub);
+
+    svg.append('text')
+      .attr('x', nx).attr('y', ny + 5)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '14px').attr('font-weight', '700')
+      .attr('fill', node.color)
+      .text(String(i + 1));
+  });
+
+  // Part 4: Play node at bottom center, breaking into the loop
+  var playY = cy + r + 70;
+  var playX = cx;
+
+  svg.append('circle')
+    .attr('cx', playX).attr('cy', playY)
+    .attr('r', 28)
+    .attr('fill', bgColor)
+    .attr('stroke', multColor)
+    .attr('stroke-width', 2.5)
+    .attr('stroke-dasharray', '6,3');
+
+  svg.append('text')
+    .attr('x', playX).attr('y', playY + 5)
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '14px').attr('font-weight', '700')
+    .attr('fill', multColor)
+    .text('4');
+
+  svg.append('text')
+    .attr('x', playX).attr('y', playY + 44)
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '12px').attr('font-weight', '600')
+    .attr('fill', textColor)
+    .text('Play breaks the loop');
+
+  svg.append('text')
+    .attr('x', playX).attr('y', playY + 60)
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '10px')
+    .attr('fill', textSec)
+    .text('(Part 4: The Playground)');
+
+  // Draw arrows from Play to each loop node
+  var breakId = 'arrow-break';
+  svg.append('defs').append('marker')
+    .attr('id', breakId)
+    .attr('viewBox', '0 0 10 10')
+    .attr('refX', 8).attr('refY', 5)
+    .attr('markerWidth', 5).attr('markerHeight', 5)
+    .attr('orient', 'auto')
+    .append('path')
+    .attr('d', 'M 0 0 L 10 5 L 0 10 Z')
+    .attr('fill', multColor);
+
+  loopNodes.forEach(function(node) {
+    var a = node.angle * Math.PI / 180;
+    var nx = cx + r * Math.cos(a);
+    var ny = cy + r * Math.sin(a);
+    // Arrow from play node toward loop node, stopping at the circle edge
+    var dx = nx - playX, dy = ny - playY;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    var sx = playX + (dx / dist) * 30;
+    var sy = playY + (dy / dist) * 30;
+    var ex = nx - (dx / dist) * 32;
+    var ey = ny - (dy / dist) * 32;
+
+    svg.append('line')
+      .attr('x1', sx).attr('y1', sy)
+      .attr('x2', ex).attr('y2', ey)
+      .attr('stroke', multColor)
+      .attr('stroke-width', 1.5)
+      .attr('stroke-opacity', 0.5)
+      .attr('stroke-dasharray', '4,3')
+      .attr('marker-end', 'url(#' + breakId + ')');
+  });
+}
+
+// ─── Initialize ───
+function initViz() {
+  renderAxesChart();
+  renderFrontierChart();
+  renderLoopViz();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initViz);
+} else {
+  initViz();
+}
+
+var resizeTimer;
+window.addEventListener('resize', function() {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(function() {
+    renderAxesChart();
+    renderFrontierChart();
+    renderLoopViz();
+  }, 250);
+});
+</script>
+
+</body>
+</html>
